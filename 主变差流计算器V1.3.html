@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>主变差流计算器V1.2</title>
+<title>主变差流计算器V1.3</title>
 <meta name="author" content="Clouday Xiao">
 <meta name="copyright" content="Copyright (c) 2026 Clouday Xiao. Licensed under the MIT License.">
 <style>
@@ -96,7 +96,7 @@
 </head>
 <body>
 <header>
-  <h1>主变差流计算器V1.2</h1>
+  <h1>主变差流计算器V1.3</h1>
   <div class="conv-row">
     <span id="convLabel">角度约定：<b>超前角为正</b>（电流超前电压为正，高压侧 A 相电压为 0° 基准）</span>
     <button id="convBtn" class="primary">切换为：滞后角为正</button>
@@ -111,6 +111,11 @@
       <div class="radio-row">
         <label><input type="radio" name="winding" id="wTwo" value="two" checked>两绕组 (Yd11)</label>
         <label><input type="radio" name="winding" id="wThree" value="three">三绕组 (YYd11)</label>
+      </div>
+      <div class="radio-row">
+        <span class="g">转角方式：</span>
+        <label><input type="radio" name="transformMethod" id="tmHv" value="hv" checked>高压侧转角（星侧 Y→Δ）</label>
+        <label><input type="radio" name="transformMethod" id="tmLv" value="lv">低压侧转角（星侧减零序 + Δ侧 Δ→Y）</label>
       </div>
       <div class="grid2" style="margin-top:8px;">
         <label class="f">额定容量 S (MVA)<input type="number" id="inS" step="any" min="0"></label>
@@ -244,7 +249,10 @@
       <summary>计算说明（点击展开）</summary>
       <p>1. <b>角度基准</b>：始终以高压侧 A 相电压为 0°。默认约定<b>超前角为正</b>（电流超前电压角度为正）；切换按钮可改为<b>滞后角为正</b>，切换时输入角度按 θ′= (360−θ) % 360 转换，物理相量不变。角度输入允许负值（±360° 内）。<b>相量图遵循数学约定</b>：0° 沿水平向右，角度以逆时针为正。</p>
       <p>2. <b>平衡系数</b>：高压侧 K_bal = 1；中压侧 K_bal = I₂n(高) / I₂n(中)；低压侧 K_bal = I₂n(高) / I₂n(低)，其中 I₂n = S / (√3·U) / nCT（二次额定电流）。</p>
-      <p>3. <b>Y-Δ 变换</b>：仅对星形侧（高压侧、中压侧）进行 I′ₐ = (Iₐ − I_b)/√3，I′ᵦ = (I_b − I_c)/√3，I′꜀ = (I_c − Iₐ)/√3；三角形侧（低压侧）保持不变。</p>
+      <p>3. <b>转角方式</b>：两种相位补偿可在页面选择。
+        <b>高压侧转角</b>（默认，V1.2 原有）对星形侧进行 Y→Δ：I′ₐ = (Iₐ − I_b)/√3，I′ᵦ = (I_b − I_c)/√3，I′꜀ = (I_c − Iₐ)/√3；三角形侧（低压侧）保持不变。
+        <b>低压侧转角</b>（RCS-978 方式）对星形侧减零序 I′ᵢ = Iᵢ − I₀（I₀ = (Iₐ + I_b + I_c)/3），对三角形侧 Δ→Y：I′ₐ = (Iₐ − I_c)/√3，I′ᵦ = (I_b − Iₐ)/√3，I′꜀ = (I_c − I_b)/√3。
+        两种方式对平衡运行即无内部故障时，差动电流 Id 一致（数学等价），结果应为 Id ≈ 0。二者仅在存在相间幅值/相角不平衡或零序时，对"平衡后到差动"的相量表现形式不同，但差动判据 Id>K·Ir 的结果一致。默认采用高压侧转角以保持与既往版本一致。</p>
       <p>4. <b>差动判据</b>：每相 Id = |Σ 平衡后各侧电流|，Ir = 各侧幅值平均值；Id > K·Ir 时该相动作（比率制动）。表中 Id/Ir/K·Ir 均以额定电流 <b>Ie</b>（= 高压侧二次额定电流 I₂n(高)）的倍数显示。</p>
       <p>5. <b>功率</b>：一次电流 I₁ = I₂·nCT；相电压 V_ph = U·1000/√3；电压相角：高压侧/中压侧为 0°/−120°/120°（星形），低压侧为 30°/−90°/150°（三角形）。每相 S = V·I*，P = Re(S)，Q = Im(S)；P>0 表示流入变压器，P<0 表示流出。</p>
       <p>6. <b>对称分量</b>：基于原始二次电流（未经平衡补偿和 Y-Δ 变换）计算。正序 I₁ = (Iₐ + a·I_b + a²·I_c)/3，负序 I₂ = (Iₐ + a²·I_b + a·I_c)/3，零序 I₀ = (Iₐ + I_b + I_c)/3，其中 a = 1∠120°。正序代表平衡三相系统，负序表示相序相反的不平衡，零序反映三相共模分量（接地故障特征）。</p>
@@ -254,16 +262,18 @@
 </main>
 
 <footer>
-  © 2026 Clouday Xiao · 主变差流计算器 V1.2 · 基于 MIT 许可证授权发布
+  © 2026 Clouday Xiao · 主变差流计算器 V1.3 · 基于 MIT 许可证授权发布
 </footer>
 
 <script>
 'use strict';
 /* ============================================================
- * 主变差流计算器V1.2
+ * 主变差流计算器V1.3
  * 约定：内部统一使用"超前角为正"的物理相量域（A 域）。
  * 输入角度按当前约定显示；计算时转换到物理域。
- * 新增：各侧输入电流的正序、负序、零序分量计算
+ * 新增（V1.3）：转角方式可选 —— 高压侧转角（星侧 Y-Δ，默认）
+ *   或低压侧转角（RCS-978 方式：星侧减零序 + Δ侧 Δ-Y）。
+ * 新增（V1.2）：各侧输入电流的正序、负序、零序分量计算
  * 作者：Clouday Xiao
  * 版权：Copyright (c) 2026 Clouday Xiao，基于 MIT 许可证授权。
  * ============================================================ */
@@ -307,11 +317,26 @@ function computeSymComponents(phasors){
 const ratedPrimaryCurrent = (S_MVA, U_kV) => S_MVA * 1e6 / (Math.sqrt(3) * U_kV * 1e3);
 const ratedSecondaryCurrent = (S_MVA, U_kV, nCT) => ratedPrimaryCurrent(S_MVA, U_kV) / nCT;
 
-/* Y-Δ 变换：仅对星形侧生效 */
+/* Y-Δ 变换：仅对星形侧生效（高压侧转角方式，V1.2 原有行为） */
 function ydConvert(phases, isStar){
   if(!isStar) return phases.map(p => ({ re: p.re, im: p.im }));
   const k = 1 / Math.sqrt(3);
   return [0,1,2].map(i => cScale(cSub(phases[i], phases[(i+1) % 3]), k));
+}
+
+/* 转角变换：method='hv'（默认，高压侧转角）沿用 ydConvert 星侧 Y→Δ；
+ *             method='lv'（低压侧转角，RCS-978 方式）星侧减零序 + Δ侧 Δ→Y */
+function applyPhaseShift(phases, isStar, method){
+  if(method === 'lv'){
+    if(!isStar){ /* Δ 侧（LV）：Δ→Y：I'ᵢ = (Iᵢ − Iᵢ₋₁)/√3 */
+      const k = 1 / Math.sqrt(3);
+      return [0,1,2].map(i => cScale(cSub(phases[i], phases[(i+2) % 3]), k));
+    }
+    /* 星侧：I'ᵢ = Iᵢ − I₀（去掉零序） */
+    const i0 = cScale(cAdd(cAdd(phases[0], phases[1]), phases[2]), 1 / 3);
+    return [0,1,2].map(i => cSub(phases[i], i0));
+  }
+  return ydConvert(phases, isStar);
 }
 
 /* 差动电流 + 比率制动：sides = [{name, phasors:[{re,im}×3]}] */
@@ -368,8 +393,8 @@ function computeAll(data){
     const ph = data[s].ph.map(p => ({ mag: p.mag, deg: conv === 'lead' ? normDeg(p.deg) : normDeg(-p.deg) }));
     raw[s] = ph.map(p => cFromPolar(p.mag, p.deg));
     balanced[s] = ph.map(p => cToPolar(cScale(cFromPolar(p.mag, p.deg), kbal[s])));
-    /* 星侧（非 LV）做 Y-Δ 变换 */
-    yd[s] = ydConvert(balanced[s].map(p => cFromPolar(p.mag, p.deg)), s !== 'lv').map(cToPolar);
+    /* 转角变换：按所选方式（高压侧转角 Y→Δ 或低压侧转角 Δ→Y） */
+    yd[s] = applyPhaseShift(balanced[s].map(p => cFromPolar(p.mag, p.deg)), s !== 'lv', data.transformMethod).map(cToPolar);
     const voltDeg = s === 'lv' ? [30, -90, 150] : [0, -120, 120];
     power[s] = computePowerSide(S, data[s].U, data[s].nCT, ph, voltDeg);
 
@@ -392,13 +417,13 @@ let lastResult = null;
 
 /* 默认数据：预设 A（两绕组 Yd11，超前角为正，各侧单位 A） */
 const DEFAULT = {
-  S: 100, K: 0.5, conv: 'lead', winding: 'two',
+  S: 100, K: 0.5, conv: 'lead', winding: 'two', transformMethod: 'hv',
   hv: { unit:'A', U: 110, nCT: 120, ph: [{mag:4.370,deg:0},{mag:4.375,deg:240},{mag:4.372,deg:120}] },
   mv: { unit:'A', U: 35,  nCT: 200, ph: [{mag:3.299,deg:0},{mag:3.299,deg:240},{mag:3.299,deg:120}] },
   lv: { unit:'A', U: 10.5, nCT: 600, ph: [{mag:9.160,deg:210},{mag:9.165,deg:90},{mag:9.162,deg:330}] },
 };
 const PRESET_B = {
-  S: 100, K: 0.5, conv: 'lead', winding: 'three',
+  S: 100, K: 0.5, conv: 'lead', winding: 'three', transformMethod: 'hv',
   hv: { unit:'A', U: 110, nCT: 120, ph: [{mag:4.370,deg:0},{mag:4.375,deg:240},{mag:4.372,deg:120}] },
   mv: { unit:'A', U: 35,  nCT: 200, ph: [{mag:3.299,deg:0},{mag:3.299,deg:240},{mag:3.299,deg:120}] },
   lv: { unit:'A', U: 10.5, nCT: 600, ph: [{mag:12.830,deg:210},{mag:12.830,deg:90},{mag:12.830,deg:330}] },
@@ -435,6 +460,7 @@ function readInputs(){
   d.S = parseFloat($('inS').value) || 0;
   d.K = parseFloat($('inK').value) || 0;
   d.winding = document.querySelector('input[name=winding]:checked').value;
+  d.transformMethod = document.querySelector('input[name=transformMethod]:checked').value;
   for(const s of ['hv','mv','lv']){
     const ids = SIDE_IDS[s];
     d[s].unit = document.querySelector(`input[name=${UNIT_NAME[s]}]:checked`).value;
@@ -459,6 +485,8 @@ function renderInputs(){
   $('wTwo').checked = data.winding === 'two';
   $('wThree').checked = data.winding === 'three';
   document.body.classList.toggle('two', data.winding === 'two');
+  $('tmHv').checked = data.transformMethod !== 'lv';
+  $('tmLv').checked = data.transformMethod === 'lv';
   for(const s of ['hv','mv','lv']){
     const ids = SIDE_IDS[s];
     const f = data[s].unit === 'mA' ? 1000 : 1;
@@ -741,6 +769,10 @@ document.querySelectorAll('input[name=winding]').forEach(el => el.addEventListen
   syncView(readInputs());
   markDirty();
 }));
+document.querySelectorAll('input[name=transformMethod]').forEach(el => el.addEventListener('change', () => {
+  syncView(readInputs());
+  markDirty();
+}));
 /* 每侧单位切换：将本侧输入框幅值在 A ↔ mA 之间换算（存储值不变 → 计算结果不变） */
 for(const s of ['hv','mv','lv']){
   document.querySelectorAll(`input[name=${UNIT_NAME[s]}]`).forEach(el => el.addEventListener('change', (ev) => {
@@ -770,6 +802,7 @@ function applyPreset(p){
     data[s].ph = data[s].ph.map(q => ({ mag: +q.mag, deg: +q.deg }));
   }
   data.conv = data.conv || 'lead';
+  data.transformMethod = data.transformMethod || 'hv';
   renderInputs();
   update();
 }
@@ -796,7 +829,7 @@ $('convBtn').addEventListener('click', () => {
 /* ---------------- __APP 测试契约 ---------------- */
 window.__APP = {
   cFromPolar, cToPolar, cAdd, cSub, cScale, cConj, cMul, normDeg,
-  ydConvert, ratedPrimaryCurrent, ratedSecondaryCurrent,
+  ydConvert, applyPhaseShift, ratedPrimaryCurrent, ratedSecondaryCurrent,
   computeDifferential, computePowerSide, computeAll, readInputs,
   computeSymComponents,  // 新增导出
   getResult: () => lastResult,
