@@ -266,7 +266,7 @@
       <p>平衡后的二次电流：<span class="math">I<sub class="sub">bal</sub> = I<sub class="sub">2</sub> · K<sub class="sub">bal</sub></span>（幅值缩放，相位不变）。</p>
 
       <p>3. <b>转角补偿</b>：为消除 Y/Δ 接线引起的相位差，对电流做相位补偿后进入差动计算。两种方式供选择：</p>
-      <p><b>① 高压侧转角</b>（星形侧 Y→Δ，三角形侧不变）：</p>
+      <p><b>① 高压侧转角</b>（星形侧 Y→Δ，三角形侧不变；与 PST1200U 系列一致）：</p>
       <div class="math">I′<sub class="sub">a</sub> = <span class="frac"><span class="num">I<sub class="sub">a</sub> − I<sub class="sub">b</sub></span><span class="den">√3</span></span>　I′<sub class="sub">b</sub> = <span class="frac"><span class="num">I<sub class="sub">b</sub> − I<sub class="sub">c</sub></span><span class="den">√3</span></span>　I′<sub class="sub">c</sub> = <span class="frac"><span class="num">I<sub class="sub">c</sub> − I<sub class="sub">a</sub></span><span class="den">√3</span></span></div>
       <p><b>② 低压侧转角</b>（RCS-978 方式：星形侧减零序，三角形侧 Δ→Y）：</p>
       <div class="math">星形侧：I′<sub class="sub">i</sub> = I<sub class="sub">i</sub> − I<sub class="sub">0</sub>，　I<sub class="sub">0</sub> = <span class="frac"><span class="num">I<sub class="sub">a</sub> + I<sub class="sub">b</sub> + I<sub class="sub">c</sub></span><span class="den">3</span></span></div>
@@ -275,7 +275,7 @@
 
       <p>4. <b>差动电流与制动电流</b>：</p>
       <div class="math">I<sub class="sub">d</sub> = |Σ 各侧平衡补偿后电流|　　I<sub class="sub">r</sub> = <span class="frac"><span class="num">Σ |I′<sub class="sub">s</sub>|</span><span class="den">2</span></span>（固定除以 2，与侧数无关）</div>
-      <p>制动电流取各侧电流幅值之和的一半（固定除以 2，与侧数无关），该形式为国内主流保护厂家（如南瑞 RCS-978 系列）采用的比率制动形式。</p>
+      <p>制动电流取各侧电流幅值之和的一半（固定除以 2，与侧数无关），该形式与国电南自 PST1200U 系列变压器保护（星形侧转角 Y→Δ）采用的比率制动一致。</p>
       <p>比率制动判据：<span class="math">I<sub class="sub">d</sub> &gt; K · I<sub class="sub">r</sub></span> 时该相动作。表中 <span class="math">I<sub class="sub">d</sub> / I<sub class="sub">r</sub> / K·I<sub class="sub">r</sub></span> 均以额定电流 <span class="math">I<sub class="sub">e</sub></span>（= 高压侧二次额定电流 <span class="math">I<sub class="sub">2n</sub>(高)</span>）的倍数显示。</p>
 
       <p>5. <b>功率</b>：一次电流 <span class="math">I<sub class="sub">1</sub> = I<sub class="sub">2</sub> · n<sub class="sub">CT</sub></span>；相电压 <span class="math">V<sub class="sub">ph</sub> = <span class="frac"><span class="num">U · 1000</span><span class="den">√3</span></span></span>；电压相角：高压侧/中压侧为 0°/−120°/120°（星形），低压侧为 30°/−90°/150°（三角形）。每相 <span class="math">S = V · I<sup class="sup">∗</sup>，P = Re(S)，Q = Im(S)</span>；<span class="math">P &gt; 0</span> 表示流入变压器，<span class="math">P &lt; 0</span> 表示流出。</p>
