@@ -213,7 +213,7 @@
       </figure>
       <figure>
         <canvas id="canvas2" width="460" height="340"></canvas>
-        <figcaption id="fig2Caption">图 2　平衡补偿 + 转角变换后（差动域，单位 A）</figcaption>
+        <figcaption id="fig2Caption">图 2　幅值平衡与相位校正后（差动域，单位 A）</figcaption>
         <div class="legend" id="fig2Legend"></div>
       </figure>
     </div>
@@ -257,34 +257,34 @@
 
     <details>
       <summary>计算说明（点击展开）</summary>
-      <p class="s1">1. <b>角度基准</b>：始终以高压侧 A 相电压为 0°。默认约定<b>超前角为正</b>（电流超前电压角度为正）；可切换为<b>滞后角为正</b>，切换时输入角度按 <span class="math">θ′ = (360 − θ) mod 360</span> 转换，物理相量不变。相量图遵循数学约定：0° 沿水平向右，角度以逆时针为正。</p>
+      <p class="s1">1. <b>角度基准与相角约定</b>：始终以高压侧 A 相电压为 0° 基准。默认约定<b>超前角为正</b>（电流超前电压时相角为正）；可切换为<b>滞后角为正</b>（电流滞后电压时相角为正）。切换约定时，输入角度按 <span class="math">θ′ = (360° − θ) mod 360°</span> 换算，同一电流对应的物理相量保持不变。相量图遵循数学惯例：0° 沿水平向右，角度以逆时针为正。</p>
 
-      <p>2. <b>额定二次电流与平衡系数</b>：各侧额定电流按额定容量折算，再除以 CT 变比。</p>
+      <p>2. <b>额定二次电流与幅值平衡（平衡系数）</b>：各侧二次额定电流按额定容量、额定电压与 CT（电流互感器）变比折算：</p>
       <div class="math">I<sub class="sub">2n</sub> = <span class="frac"><span class="num">S</span><span class="den">√3 · U · n<span class="sub">CT</span></span></span></div>
-      <p>以高压侧为基准（<span class="math">K<sub class="sub">bal</sub>(高) = 1</span>）：</p>
+      <p>式中 <span class="math">U</span> 为该侧额定线电压（kV），<span class="math">n<sub class="sub">CT</sub></span> 为 CT 变比。以高压侧为基准（<span class="math">K<sub class="sub">bal</sub>(高) = 1</span>）：</p>
       <div class="math">K<sub class="sub">bal</sub>(侧) = <span class="frac"><span class="num">I<sub class="sub">2n</sub>(高)</span><span class="den">I<sub class="sub">2n</sub>(侧)</span></span></div>
-      <p>平衡后的二次电流：<span class="math">I<sub class="sub">bal</sub> = I<sub class="sub">2</sub> · K<sub class="sub">bal</sub></span>（幅值缩放，相位不变）。</p>
+      <p>幅值平衡（平衡补偿）：<span class="math">I<sub class="sub">bal</sub> = I<sub class="sub">2</sub> · K<sub class="sub">bal</sub></span>（仅幅值缩放，相位不变）。</p>
 
-      <p>3. <b>转角补偿</b>：为消除 Y/Δ 接线引起的相位差，对电流做相位补偿后进入差动计算。两种方式供选择：</p>
-      <p><b>① 高压侧转角</b>（星形侧 Y→Δ，三角形侧不变；与 PST1200U 系列一致）：</p>
+      <p>3. <b>相位校正（转角）</b>：为消除 Y/Δ 接线引起的相位差，各侧电流须经相位校正后再进入差动计算，两种方式可选：</p>
+      <p><b>① 高压侧转角</b>（星形侧进行 Y→Δ 变换，三角形侧不变；与 PST1200U 系列一致）：</p>
       <div class="math">I′<sub class="sub">a</sub> = <span class="frac"><span class="num">I<sub class="sub">a</sub> − I<sub class="sub">b</sub></span><span class="den">√3</span></span>　I′<sub class="sub">b</sub> = <span class="frac"><span class="num">I<sub class="sub">b</sub> − I<sub class="sub">c</sub></span><span class="den">√3</span></span>　I′<sub class="sub">c</sub> = <span class="frac"><span class="num">I<sub class="sub">c</sub> − I<sub class="sub">a</sub></span><span class="den">√3</span></span></div>
-      <p><b>② 低压侧转角</b>（RCS-978 方式：星形侧减零序，三角形侧 Δ→Y）：</p>
+      <p><b>② 低压侧转角</b>（RCS-978 方式：星形侧减去零序电流，三角形侧进行 Δ→Y 变换）：</p>
       <div class="math">星形侧：I′<sub class="sub">i</sub> = I<sub class="sub">i</sub> − I<sub class="sub">0</sub>，　I<sub class="sub">0</sub> = <span class="frac"><span class="num">I<sub class="sub">a</sub> + I<sub class="sub">b</sub> + I<sub class="sub">c</sub></span><span class="den">3</span></span></div>
       <div class="math">三角形侧：I′<sub class="sub">a</sub> = <span class="frac"><span class="num">I<sub class="sub">a</sub> − I<sub class="sub">c</sub></span><span class="den">√3</span></span>　I′<sub class="sub">b</sub> = <span class="frac"><span class="num">I<sub class="sub">b</sub> − I<sub class="sub">a</sub></span><span class="den">√3</span></span>　I′<sub class="sub">c</sub> = <span class="frac"><span class="num">I<sub class="sub">c</sub> − I<sub class="sub">b</sub></span><span class="den">√3</span></span></div>
-      <p>两种方式在平衡运行（无内部故障）时差动电流一致（数学等价），<span class="math">I<sub class="sub">d</sub> ≈ 0</span>；仅在存在不平衡或零序分量时，补偿后相量表现形式不同，但差动判据结果一致。</p>
+      <p>两种方式在正常运行（无内部故障）时差动电流一致（数学等价），<span class="math">I<sub class="sub">d</sub> ≈ 0</span>；仅在存在不平衡电流或零序分量时，补偿后电流相量的表达形式不同，但差动判据结论一致。经幅值平衡与相位校正后的电流统称为<b>补偿后电流</b>，后续差动计算均基于补偿后电流。</p>
 
       <p>4. <b>差动电流与制动电流</b>：</p>
-      <div class="math">I<sub class="sub">d</sub> = |Σ 各侧平衡补偿后电流|　　I<sub class="sub">r</sub> = <span class="frac"><span class="num">Σ |I′<sub class="sub">s</sub>|</span><span class="den">2</span></span>（固定除以 2，与侧数无关）</div>
-      <p>制动电流取各侧电流幅值之和的一半（固定除以 2，与侧数无关），该形式与国电南自 PST1200U 系列变压器保护（星形侧转角 Y→Δ）采用的比率制动一致。</p>
-      <p>比率制动判据：<span class="math">I<sub class="sub">d</sub> &gt; K · I<sub class="sub">r</sub></span> 时该相动作。表中 <span class="math">I<sub class="sub">d</sub> / I<sub class="sub">r</sub> / K·I<sub class="sub">r</sub></span> 均以额定电流 <span class="math">I<sub class="sub">e</sub></span>（= 高压侧二次额定电流 <span class="math">I<sub class="sub">2n</sub>(高)</span>）的倍数显示。</p>
+      <div class="math">I<sub class="sub">d</sub> = |Σ 各侧补偿后电流|　　I<sub class="sub">r</sub> = <span class="frac"><span class="num">Σ |I′<sub class="sub">s</sub>|</span><span class="den">2</span></span>（固定除以 2，与侧数无关）</div>
+      <p>式中 <span class="math">I′<sub class="sub">s</sub></span> 为第 s 侧补偿后电流的幅值。制动电流取各侧补偿后电流幅值之和的一半（固定除以 2，与侧数无关），与国电南自 PST1200U 系列变压器保护（星形侧转角 Y→Δ）采用的比率制动形式一致。</p>
+      <p>比率制动判据：<span class="math">I<sub class="sub">d</sub> &gt; K · I<sub class="sub">r</sub></span> 时该相动作。结果表中 <span class="math">I<sub class="sub">d</sub></span>、<span class="math">I<sub class="sub">r</sub></span>、<span class="math">K·I<sub class="sub">r</sub></span> 均以额定电流 <span class="math">I<sub class="sub">e</sub></span>（= 高压侧二次额定电流 <span class="math">I<sub class="sub">2n</sub>(高)</span>）的倍数显示。</p>
 
-      <p>5. <b>功率</b>：一次电流 <span class="math">I<sub class="sub">1</sub> = I<sub class="sub">2</sub> · n<sub class="sub">CT</sub></span>；相电压 <span class="math">V<sub class="sub">ph</sub> = <span class="frac"><span class="num">U · 1000</span><span class="den">√3</span></span></span>；电压相角：高压侧/中压侧为 0°/−120°/120°（星形），低压侧为 30°/−90°/150°（三角形）。每相 <span class="math">S = V · I<sup class="sup">∗</sup>，P = Re(S)，Q = Im(S)</span>；<span class="math">P &gt; 0</span> 表示流入变压器，<span class="math">P &lt; 0</span> 表示流出。</p>
+      <p>5. <b>功率</b>：一次电流 <span class="math">I<sub class="sub">1</sub> = I<sub class="sub">2</sub> · n<sub class="sub">CT</sub></span>；相电压 <span class="math">V<sub class="sub">ph</sub> = <span class="frac"><span class="num">U · 1000</span><span class="den">√3</span></span></span>（<span class="math">U</span> 为额定线电压，kV；<span class="math">V<sub class="sub">ph</sub></span> 为相电压，V）。电压相角以高压侧 A 相电压为 0° 基准：高压侧、中压侧（星形）A/B/C 相分别为 0°、−120°、120°；低压侧（三角形）A/B/C 相分别为 30°、−90°、150°。每相复功率 <span class="math">S = V · I<sup class="sup">∗</sup>，P = Re(S)，Q = Im(S)</span>；<span class="math">P &gt; 0</span> 表示功率流入变压器，<span class="math">P &lt; 0</span> 表示功率流出。</p>
 
-      <p>6. <b>对称分量</b>：基于原始二次电流（未经平衡补偿与转角变换）计算，其中 <span class="math">a = 1∠120°</span>：</p>
+      <p>6. <b>对称分量</b>：基于原始二次电流（未经幅值平衡与相位校正）计算，其中 <span class="math">a = 1∠120°</span> 为旋转因子：</p>
       <div class="math">I<sub class="sub">1</sub> = <span class="frac"><span class="num">I<sub class="sub">a</sub> + a · I<sub class="sub">b</sub> + a² · I<sub class="sub">c</sub></span><span class="den">3</span></span>　I<sub class="sub">2</sub> = <span class="frac"><span class="num">I<sub class="sub">a</sub> + a² · I<sub class="sub">b</sub> + a · I<sub class="sub">c</sub></span><span class="den">3</span></span>　I<sub class="sub">0</sub> = <span class="frac"><span class="num">I<sub class="sub">a</sub> + I<sub class="sub">b</sub> + I<sub class="sub">c</sub></span><span class="den">3</span></span></div>
-      <p>正序代表平衡三相系统，负序表示相序相反的不平衡，零序反映三相共模分量（接地故障特征）。</p>
+      <p>正序分量对应平衡的三相系统；负序分量反映相序不对称；零序分量反映三相共模分量，是接地故障的特征量。</p>
 
-      <p>7. <b>颜色/线型</b>：A 相 <span style="color:var(--A)">金黄色</span>、B 相 <span style="color:var(--B)">绿色</span>、C 相 <span style="color:var(--C)">橙红色</span>；H 实线、M 虚线、L 点划线（均为 2.5px）；差动电流为黑色虚线（3px，仅图 2）。相量图中 H/M/L 分别表示高压侧/中压侧/低压侧。</p>
+      <p>7. <b>图例（颜色与线型）</b>：相量图中 H/M/L 分别表示高压侧/中压侧/低压侧。相色：A 相 <span style="color:var(--A)">金黄色</span>、B 相 <span style="color:var(--B)">绿色</span>、C 相 <span style="color:var(--C)">橙红色</span>。线型：H 实线、M 虚线、L 点划线（线宽 2.5 px）；差动电流以黑色虚线绘制（线宽 3 px，仅图 2）。</p>
     </details>
   </section>
 </main>
@@ -517,8 +517,8 @@ const TM_HINT = {
   lv: '星形侧（高/中压）电流减零序 I′ᵢ = Iᵢ − I₀（I₀ 为三相平均值），三角形侧（低压）做 Δ→Y 变换 I′ᵢ = (Iᵢ − Iᵢ₋₁)/√3。',
 };
 const FIG2_CAPTION = {
-  hv: '图 2　平衡补偿 + Y→Δ 变换后（差动域，单位 A）',
-  lv: '图 2　平衡补偿 + 减零序 / Δ→Y 变换后（差动域，单位 A）',
+  hv: '图 2　幅值平衡与相位校正后（高压侧转角 Y→Δ，差动域，单位 A）',
+  lv: '图 2　幅值平衡与相位校正后（低压侧转角 减零序 / Δ→Y，差动域，单位 A）',
 };
 function applyTransformMethodUI(method){
   const m = method === 'lv' ? 'lv' : 'hv';
