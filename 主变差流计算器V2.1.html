@@ -77,6 +77,9 @@
   .swatch.sPos{border-top:3px solid var(--pos);}
   .swatch.sNeg{border-top:3px solid var(--neg);}
   .swatch.sZero{border-top:3px solid var(--zero);}
+  .swatch.dot{width:10px; height:10px; border:none; border-radius:50%; background:#000;}
+  .swatch.dotA{background:var(--A);} .swatch.dotB{background:var(--B);} .swatch.dotC{background:var(--C);}
+  .swatch.dotHollow{background:#fff; border:2px solid #64748b;}
   .tbl-wrap{overflow-x:auto; margin-bottom:2px;}
   table.res{width:100%; border-collapse:collapse; font-size:13px; margin-bottom:14px;}
   table.res caption{text-align:left; font-weight:700; font-size:14px; padding:6px 2px;}
@@ -969,13 +972,14 @@ function drawIdIrCurve(canvas, fig3){
   ctx.textAlign = 'center';
   ctx.fillText('差动动作区', X(XMAX * 0.68), Y(yScale * 0.85));
 
-  /* 运行点（A/B/C） */
+  /* 运行点（A/B/C，黄/绿/红按相别；实心=动作，空心=不动作） */
   points.forEach(p => {
     const x = X(Math.min(p.ir, XMAX)), y = Y(Math.min(p.id, yScale));
+    const c = COLORS[p.phase] || '#334155';
     ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2);
-    if(p.trip){ ctx.fillStyle = '#dc2626'; ctx.fill(); }
-    else { ctx.strokeStyle = '#16a34a'; ctx.lineWidth = 2; ctx.stroke(); }
-    ctx.fillStyle = '#334155'; ctx.font = 'bold 10px sans-serif';
+    if(p.trip){ ctx.fillStyle = c; ctx.fill(); }
+    else { ctx.strokeStyle = c; ctx.lineWidth = 2; ctx.stroke(); }
+    ctx.fillStyle = c; ctx.font = 'bold 10px sans-serif';
     ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
     ctx.fillText(p.phase, x + 7, y - 4);
   });
@@ -1030,7 +1034,11 @@ function drawDiagrams(r){
   const f3l = $('fig3Legend');
   if(f3l) f3l.innerHTML = '<span><i class="swatch sHV"></i>判据</span>' +
     (r.transformMethod === 'lv' ? '<span><i class="swatch sMV"></i>高值</span>' : '') +
-    '<span><i class="swatch cA"></i>A 相</span><span><i class="swatch cB"></i>B 相</span><span><i class="swatch cC"></i>C 相</span>';
+    '<span><i class="swatch dot dotA"></i>A 相</span>' +
+    '<span><i class="swatch dot dotB"></i>B 相</span>' +
+    '<span><i class="swatch dot dotC"></i>C 相</span>' +
+    '<span><i class="swatch dot"></i>动作</span>' +
+    '<span><i class="swatch dot dotHollow"></i>不动作</span>';
 }
 
 /* ---------------- 更新流程 ---------------- */
