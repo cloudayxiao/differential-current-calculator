@@ -266,16 +266,16 @@
       <p>幅值平衡（平衡补偿）：<span class="math">I<sub class="sub">bal</sub> = I<sub class="sub">2</sub> · K<sub class="sub">bal</sub></span>（仅幅值缩放，相位不变）。</p>
 
       <p>3. <b>相位校正（转角）</b>：为消除 Y/Δ 接线引起的相位差，各侧电流须经相位校正后再进入差动计算，两种方式可选：</p>
-      <p><b>① 高压侧转角</b>（星形侧进行 Y→Δ 变换，三角形侧不变；与 PST1200U 系列一致）：</p>
+      <p><b>① 高压侧转角</b>（星形侧进行 Y→Δ 变换，三角形侧不变）：国内绝大多数装置采用该方式（如国电南自 PST1200U/PST-1202、四方 CSC-326、长园深瑞 PRS-778、许继 WBH-801、南瑞继保 RCS-985 等）。</p>
       <div class="math">I′<sub class="sub">a</sub> = <span class="frac"><span class="num">I<sub class="sub">a</sub> − I<sub class="sub">b</sub></span><span class="den">√3</span></span>　I′<sub class="sub">b</sub> = <span class="frac"><span class="num">I<sub class="sub">b</sub> − I<sub class="sub">c</sub></span><span class="den">√3</span></span>　I′<sub class="sub">c</sub> = <span class="frac"><span class="num">I<sub class="sub">c</sub> − I<sub class="sub">a</sub></span><span class="den">√3</span></span></div>
-      <p><b>② 低压侧转角</b>（RCS-978 方式：星形侧减去零序电流，三角形侧进行 Δ→Y 变换）：</p>
+      <p><b>② 低压侧转角</b>（角转星方式：星形侧减去零序电流，三角形侧进行 Δ→Y 变换；以南瑞继保 RCS-978 / 国电南瑞 PCS-978 系列为代表）：</p>
       <div class="math">星形侧：I′<sub class="sub">i</sub> = I<sub class="sub">i</sub> − I<sub class="sub">0</sub>，　I<sub class="sub">0</sub> = <span class="frac"><span class="num">I<sub class="sub">a</sub> + I<sub class="sub">b</sub> + I<sub class="sub">c</sub></span><span class="den">3</span></span></div>
       <div class="math">三角形侧：I′<sub class="sub">a</sub> = <span class="frac"><span class="num">I<sub class="sub">a</sub> − I<sub class="sub">c</sub></span><span class="den">√3</span></span>　I′<sub class="sub">b</sub> = <span class="frac"><span class="num">I<sub class="sub">b</sub> − I<sub class="sub">a</sub></span><span class="den">√3</span></span>　I′<sub class="sub">c</sub> = <span class="frac"><span class="num">I<sub class="sub">c</sub> − I<sub class="sub">b</sub></span><span class="den">√3</span></span></div>
       <p>两种方式在正常运行（无内部故障）时差动电流一致（数学等价），<span class="math">I<sub class="sub">d</sub> ≈ 0</span>；仅在存在不平衡电流或零序分量时，补偿后电流相量的表达形式不同，但差动判据结论一致。经幅值平衡与相位校正后的电流统称为<b>补偿后电流</b>，后续差动计算均基于补偿后电流。</p>
 
       <p>4. <b>差动电流与制动电流</b>：</p>
       <div class="math">I<sub class="sub">d</sub> = |Σ 各侧补偿后电流|　　I<sub class="sub">r</sub> = <span class="frac"><span class="num">Σ |I′<sub class="sub">s</sub>|</span><span class="den">2</span></span>（固定除以 2，与侧数无关）</div>
-      <p>式中 <span class="math">I′<sub class="sub">s</sub></span> 为第 s 侧补偿后电流的幅值。制动电流取各侧补偿后电流幅值之和的一半（固定除以 2，与侧数无关），与国电南自 PST1200U 系列变压器保护（星形侧转角 Y→Δ）采用的比率制动形式一致。</p>
+      <p>式中 <span class="math">I′<sub class="sub">s</sub></span> 为第 s 侧补偿后电流的幅值。制动电流取各侧补偿后电流幅值之和的一半（固定除以 2，与侧数无关），与国电南自 PST1200U、南瑞继保 RCS-978（稳态比率差动）、长园深瑞 PRS-778 等主流装置的比率制动形式一致；少数装置（如老型号 PST-1200、许继 WBH-801 等）则以各侧电流幅值的最大值作制动量。</p>
       <p>比率制动判据：<span class="math">I<sub class="sub">d</sub> &gt; K · I<sub class="sub">r</sub></span> 时该相动作。结果表中 <span class="math">I<sub class="sub">d</sub></span>、<span class="math">I<sub class="sub">r</sub></span>、<span class="math">K·I<sub class="sub">r</sub></span> 均以额定电流 <span class="math">I<sub class="sub">e</sub></span>（= 高压侧二次额定电流 <span class="math">I<sub class="sub">2n</sub>(高)</span>）的倍数显示。</p>
 
       <p>5. <b>功率</b>：一次电流 <span class="math">I<sub class="sub">1</sub> = I<sub class="sub">2</sub> · n<sub class="sub">CT</sub></span>；相电压 <span class="math">V<sub class="sub">ph</sub> = <span class="frac"><span class="num">U · 1000</span><span class="den">√3</span></span></span>（<span class="math">U</span> 为额定线电压，kV；<span class="math">V<sub class="sub">ph</sub></span> 为相电压，V）。电压相角以高压侧 A 相电压为 0° 基准：高压侧、中压侧（星形）A/B/C 相分别为 0°、−120°、120°；低压侧（三角形）A/B/C 相分别为 30°、−90°、150°。每相复功率 <span class="math">S = V · I<sup class="sup">∗</sup>，P = Re(S)，Q = Im(S)</span>；<span class="math">P &gt; 0</span> 表示功率流入变压器，<span class="math">P &lt; 0</span> 表示功率流出。</p>
