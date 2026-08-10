@@ -31,6 +31,7 @@
   legend{font-weight:600; font-size:13px; padding:0 6px; color:var(--accent);}
   .grid2{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
   label.f{display:flex; flex-direction:column; gap:3px; font-size:12px; color:var(--muted);}
+  label.f .lbl{display:block; min-height:2.4em; line-height:1.2;}   /* 标签文本预留两行，避免 Iop.min 长标签换行时输入框错位 */
   input[type=number], input[type=text]{width:100%; padding:6px 8px; border:1px solid var(--border);
     border-radius:6px; font-size:14px; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
     color:var(--text); background:#fff;}
@@ -132,8 +133,8 @@
       </div>
       <div class="tm-hint" id="tmHint"></div>
       <div class="grid2" style="margin-top:8px;">
-        <label class="f">额定容量 S (MVA)<input type="number" id="inS" step="any" min="0"></label>
-        <label class="f"><span id="lblIop">差动最小动作电流 Iop.min (Ie)</span><input type="number" id="inIop" step="any" min="0"></label>
+        <label class="f"><span class="lbl">额定容量 S (MVA)</span><input type="number" id="inS" step="any" min="0"></label>
+        <label class="f"><span class="lbl" id="lblIop">差动最小动作电流 Iop.min (Ie)</span><input type="number" id="inIop" step="any" min="0"></label>
       </div>
     </fieldset>
 
@@ -300,6 +301,7 @@
       <p>高值（公式 3.4-2，<span class="math">I<sub class="sub">r</sub> &gt; 0.8I<sub class="sub">e</sub></span> 时）：</p>
       <div class="math">I<sub class="sub">d</sub> &gt; 1.2I<sub class="sub">e</sub> + 0.6 · (I<sub class="sub">r</sub> − 0.8I<sub class="sub">e</sub>)</div>
       <p>动作门槛取低值与高值之较小者（任一满足即动作）。结果表中 <span class="math">I<sub class="sub">d</sub></span>、<span class="math">I<sub class="sub">r</sub></span>、<span class="math">I<sub class="sub">d.set</sub></span> 均以额定电流 <span class="math">I<sub class="sub">e</sub></span>（= 高压侧二次额定电流 <span class="math">I<sub class="sub">2n</sub>(高)</span>）的倍数显示。</p>
+      <p><b>③ 动作特性曲线（图 3）</b>：按所选厂家判据实时绘制 <span class="math">I<sub class="sub">d</sub>–I<sub class="sub">r</sub></span> 曲线，横轴为制动电流 <span class="math">I<sub class="sub">r</sub></span>（0–8Ie）、纵轴为差动电流 <span class="math">I<sub class="sub">d</sub></span>（动态量程），均以 <span class="math">I<sub class="sub">e</sub></span> 为单位。高压侧转角绘制 PST1200U 三折线；低压侧转角绘制 PCS978 低值（三段）+ 高值两组曲线（高值以虚线区分）。判据曲线上方以灰色阴影标示<b>差动动作区</b>，曲线下方为制动（不动作）区；拐点（0.8Ie/3Ie 或 0.5Ie/6Ie）与各段斜率（K1=0.5/K2=0.7，或 K=0.2/0.5/0.75、高值 K=0.6）就地标注。计算所得的 A/B/C 三相运行点 <span class="math">(I<sub class="sub">r</sub>, I<sub class="sub">d</sub>)</span> 以相别颜色（黄 A / 绿 B / 红 C）圆点标入图中，<b>实心圆 = 动作、空心圆 = 不动作</b>，与结果表动作结论一致；运行点落入阴影区即表示该相差动保护动作。</p>
 
       <p>6. <b>功率</b>：一次电流 <span class="math">I<sub class="sub">1</sub> = I<sub class="sub">2</sub> · n<sub class="sub">CT</sub></span>；相电压 <span class="math">V<sub class="sub">ph</sub> = <span class="frac"><span class="num">U · 1000</span><span class="den">√3</span></span></span>（<span class="math">U</span> 为额定线电压，kV；<span class="math">V<sub class="sub">ph</sub></span> 为相电压，V）。电压相角以高压侧 A 相电压为 0° 基准：高压侧、中压侧（星形）A/B/C 相分别为 0°、−120°、120°；低压侧（三角形）A/B/C 相分别为 30°、−90°、150°。每相复功率 <span class="math">S = V · I<sup class="sup">∗</sup>，P = Re(S)，Q = Im(S)</span>；<span class="math">P &gt; 0</span> 表示功率流入变压器，<span class="math">P &lt; 0</span> 表示功率流出。</p>
 
@@ -307,7 +309,7 @@
       <div class="math">I<sub class="sub">1</sub> = <span class="frac"><span class="num">I<sub class="sub">a</sub> + a · I<sub class="sub">b</sub> + a² · I<sub class="sub">c</sub></span><span class="den">3</span></span>　I<sub class="sub">2</sub> = <span class="frac"><span class="num">I<sub class="sub">a</sub> + a² · I<sub class="sub">b</sub> + a · I<sub class="sub">c</sub></span><span class="den">3</span></span>　I<sub class="sub">0</sub> = <span class="frac"><span class="num">I<sub class="sub">a</sub> + I<sub class="sub">b</sub> + I<sub class="sub">c</sub></span><span class="den">3</span></span></div>
       <p>正序分量对应平衡的三相系统；负序分量反映相序不对称；零序分量反映三相共模分量，是接地故障的特征量。</p>
 
-      <p>8. <b>图例（颜色与线型）</b>：相量图中 H/M/L 分别表示高压侧/中压侧/低压侧。相色：A 相 <span style="color:var(--A)">金黄色</span>、B 相 <span style="color:var(--B)">绿色</span>、C 相 <span style="color:var(--C)">橙红色</span>。线型：H 实线、M 虚线、L 点划线（线宽 2.5 px）；差动电流以黑色虚线绘制（线宽 3 px，仅图 2）。</p>
+      <p>8. <b>图例（颜色与线型）</b>：相量图（图 1、图 2）中 H/M/L 分别表示高压侧/中压侧/低压侧。相色：A 相 <span style="color:var(--A)">金黄色</span>、B 相 <span style="color:var(--B)">绿色</span>、C 相 <span style="color:var(--C)">橙红色</span>。线型：H 实线、M 虚线、L 点划线（线宽 2.5 px）；差动电流以黑色虚线绘制（线宽 3 px，仅图 2）。动作特性曲线（图 3）图例：实线/虚线分别表示判据与高值（低压侧转角时），<span style="color:var(--A)">●</span> 黄点 = A 相、<span style="color:var(--B)">●</span> 绿点 = B 相、<span style="color:var(--C)">●</span> 红点 = C 相运行点，黑色实心圆 = 动作、白色空心圆 = 不动作。</p>
     </details>
   </section>
 </main>
