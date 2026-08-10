@@ -304,7 +304,7 @@
       <p>高值判据（<span class="math">I<sub class="sub">r</sub> &gt; 0.8I<sub class="sub">e</sub></span> 时）：</p>
       <div class="math">I<sub class="sub">d</sub> &gt; 1.2I<sub class="sub">e</sub> + 0.6 · (I<sub class="sub">r</sub> − 0.8I<sub class="sub">e</sub>)</div>
       <p>动作门槛取低值与高值之较小者（任一满足即动作）。结果表中 <span class="math">I<sub class="sub">d</sub></span>、<span class="math">I<sub class="sub">r</sub></span>、<span class="math">I<sub class="sub">d.set</sub></span> 均以额定电流 <span class="math">I<sub class="sub">e</sub></span>（= 高压侧二次额定电流 <span class="math">I<sub class="sub">2n</sub>(H)</span>）的倍数显示。</p>
-      <p><b>③ 动作特性曲线（图 3）</b>：按所选厂家判据实时绘制 <span class="math">I<sub class="sub">d</sub>–I<sub class="sub">r</sub></span> 曲线，横轴为制动电流 <span class="math">I<sub class="sub">r</sub></span>（0–8Ie）、纵轴为差动电流 <span class="math">I<sub class="sub">d</sub></span>（0–8Ie），两者同以 <span class="math">I<sub class="sub">e</sub></span> 为单位且刻度比例一致。高压侧转角绘制 PST1200U 三折线；低压侧转角绘制 PCS978 低值（三段）+ 高值两组曲线（高值以虚线区分）。判据曲线上方以灰色阴影标示<b>差动动作区</b>，曲线下方为制动（不动作）区；拐点（0.8Ie/3Ie 或 0.5Ie/6Ie）与各段斜率（K1=0.5/K2=0.7，或 K=0.2/0.5/0.75、高值 K=0.6）标注于图中对应位置。计算所得的 A/B/C 三相运行点 <span class="math">(I<sub class="sub">r</sub>, I<sub class="sub">d</sub>)</span> 以相别颜色（黄 A / 绿 B / 红 C）圆点标入图中，<b>实心圆 = 动作、空心圆 = 不动作</b>，与结果表动作结论一致；运行点落入阴影区即表示该相差动保护动作。</p>
+      <p><b>③ 动作特性曲线（图 3）</b>：按所选厂家判据实时绘制 <span class="math">I<sub class="sub">d</sub>–I<sub class="sub">r</sub></span> 曲线，横轴为制动电流 <span class="math">I<sub class="sub">r</sub></span>、纵轴为差动电流 <span class="math">I<sub class="sub">d</sub></span>，均以 <span class="math">I<sub class="sub">e</sub></span> 为单位；量程随计算结果动态调整，且两轴刻度比例一致。高压侧转角绘制 PST1200U 三折线；低压侧转角绘制 PCS978 低值（三段）+ 高值两组曲线（高值以虚线区分）。判据曲线上方以灰色阴影标示<b>差动动作区</b>，曲线下方为制动（不动作）区；拐点（0.8Ie/3Ie 或 0.5Ie/6Ie）与各段斜率（K1=0.5/K2=0.7，或 K=0.2/0.5/0.75、高值 K=0.6）标注于图中对应位置。计算所得的 A/B/C 三相运行点 <span class="math">(I<sub class="sub">r</sub>, I<sub class="sub">d</sub>)</span> 以相别颜色（黄 A / 绿 B / 红 C）圆点标入图中，<b>实心圆 = 动作、空心圆 = 不动作</b>，与结果表动作结论一致；运行点落入阴影区即表示该相差动保护动作。</p>
 
       <p>6. <b>功率</b>：一次电流 <span class="math">I<sub class="sub">1</sub> = I<sub class="sub">2</sub> · n<sub class="sub">CT</sub></span>；相电压 <span class="math">V<sub class="sub">ph</sub> = <span class="frac"><span class="num">U · 1000</span><span class="den">√3</span></span></span>（<span class="math">U</span> 为额定线电压，kV；<span class="math">V<sub class="sub">ph</sub></span> 为相电压，V）。电压相角以高压侧 A 相电压为 0° 基准：高压侧、中压侧（星形）A/B/C 相分别为 0°、−120°、120°；低压侧（三角形）A/B/C 相分别为 30°、−90°、150°。每相复功率 <span class="math">S = V · I<sup class="sup">∗</sup>，P = Re(S)，Q = Im(S)</span>；<span class="math">P &gt; 0</span> 表示功率流入变压器，<span class="math">P &lt; 0</span> 表示功率流出。</p>
 
@@ -875,60 +875,73 @@ function drawIdIrCurve(canvas, fig3){
   ctx.clearRect(0, 0, cssW, cssH);
 
   const { curve, points } = fig3;
-  const XMAX = CURVE_MAX_IR;
-  const yScale = XMAX;   /* Id/Ir 同以 Ie 为单位，纵轴固定 0–8Ie 与横轴等比例，斜率/动作区几何真实 */
+  const XMAX = CURVE_MAX_IR;   /* 判据定义域上限（8Ie），仅用于曲线数据与裁剪 */
 
   /* 绘图区布局：左边距放 Y 轴刻度，下边距放 X 轴刻度 */
   const ml = 44, mr = 16, mt = 12, mb = 34;
   const pw = cssW - ml - mr, ph = cssH - mt - mb;
-  const X = x => ml + x / XMAX * pw;
-  const Y = y => mt + ph - y / yScale * ph;
 
-  /* 网格 + 刻度 */
+  /* 动态量程：由运行点数据驱动，并保持两轴刻度比例一致（每 1Ie 像素相同），
+   * 使判据斜率与动作区的几何关系真实。 */
+  let xMax = 1, yMax = 1;
+  points.forEach(p => {
+    if(p.ir > xMax) xMax = p.ir;
+    if(p.id > yMax) yMax = p.id;
+  });
+  xMax = Math.max(2, niceCeil(xMax * 1.1));   /* 下限 2Ie，保留判据基本形态 */
+  yMax = niceCeil(yMax * 1.1);
+  if(yMax < xMax * ph / pw) yMax = xMax * ph / pw;   /* 纵轴不足则放大纵轴，保证比例一致 */
+  else xMax = yMax * pw / ph;                          /* 否则放大横轴 */
+
+  const X = x => ml + x / xMax * pw;
+  const Y = y => mt + ph - y / yMax * ph;
+
+  /* 网格 + 刻度（两轴步长一致，比例相同） */
   ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1;
   ctx.font = '10px sans-serif';
-  for(let ix = 0; ix <= XMAX; ix += 2){
+  const gridStep = niceCeil(yMax / 4);
+  for(let ix = 0; ix <= xMax + 1e-9; ix += gridStep){
     ctx.fillStyle = '#94a3b8'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
     ctx.fillText(ix + 'Ie', X(ix), Y(0) + 6);
-    ctx.beginPath(); ctx.moveTo(X(ix), Y(0)); ctx.lineTo(X(ix), Y(yScale)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(X(ix), Y(0)); ctx.lineTo(X(ix), Y(yMax)); ctx.stroke();
   }
-  const ySteps = niceCeil(yScale / 4);
-  for(let iy = 0; iy <= yScale + 1e-9; iy += ySteps){
+  for(let iy = 0; iy <= yMax + 1e-9; iy += gridStep){
     ctx.fillStyle = '#94a3b8'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
     ctx.fillText(iy.toFixed(1) + 'Ie', X(0) - 6, Y(iy));
-    ctx.beginPath(); ctx.moveTo(X(0), Y(iy)); ctx.lineTo(X(XMAX), Y(iy)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(X(0), Y(iy)); ctx.lineTo(X(xMax), Y(iy)); ctx.stroke();
   }
   ctx.strokeStyle = '#cbd5e1';
-  ctx.beginPath(); ctx.moveTo(X(0), Y(0)); ctx.lineTo(X(XMAX), Y(0)); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(X(0), Y(yScale)); ctx.lineTo(X(0), Y(0)); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(X(0), Y(0)); ctx.lineTo(X(xMax), Y(0)); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(X(0), Y(yMax)); ctx.lineTo(X(0), Y(0)); ctx.stroke();
 
   /* 轴标题 */
   ctx.fillStyle = '#334155'; ctx.font = 'bold 12px sans-serif';
   ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-  ctx.fillText('制动电流 Ir', X(XMAX / 2), cssH - 16);
+  ctx.fillText('制动电流 Ir', X(xMax / 2), cssH - 16);
   ctx.save();
   ctx.translate(12, mt + ph / 2); ctx.rotate(-Math.PI / 2);
   ctx.fillText('差动电流 Id', 0, 0);
   ctx.restore();
 
   /* 动作区阴影：逐 x 采样 min(低值, 高值)（lv）或折线（hv），填充曲线上方 */
-  const step = XMAX / (pw * 0.5);
+  const step = xMax / (pw * 0.5);
   const regionId = x => {
     const setId = x <= 0 ? (curve[0] ? curve[0].id : 0) : ratioSetId(x, fig3.iop || 0, fig3.method || 'hv');
     return setId;
   };
   ctx.beginPath();
   ctx.moveTo(X(0), Y(regionId(0)));
-  for(let x = step; x <= XMAX + 1e-9; x += step){
+  for(let x = step; x <= xMax + 1e-9; x += step){
     ctx.lineTo(X(x), Y(regionId(x)));
   }
-  ctx.lineTo(X(XMAX), Y(yScale));
-  ctx.lineTo(X(0), Y(yScale));
+  ctx.lineTo(X(xMax), Y(yMax));
+  ctx.lineTo(X(0), Y(yMax));
   ctx.closePath();
   ctx.fillStyle = 'rgba(148, 163, 184, 0.18)';
   ctx.fill();
 
-  /* 判据曲线 */
+  /* 判据曲线（仅绘制量程内可见部分，canvas 自动裁剪超界线段） */
+  const inView = (x, y) => x <= xMax && y <= yMax;
   const strokeCurve = (pts, color, dash) => {
     ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.setLineDash(dash);
     ctx.beginPath();
@@ -940,41 +953,41 @@ function drawIdIrCurve(canvas, fig3){
     strokeCurve(curve, '#334155', []);
     ctx.fillStyle = '#334155'; ctx.font = 'italic 10px sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText('K1=0.5', X(1.6), Y(0.5));
-    ctx.fillText('K2=0.7', X(4.2), Y(2.6));
+    if(inView(1.6, 0.5)) ctx.fillText('K1=0.5', X(1.6), Y(0.5));
+    if(inView(4.2, 2.6)) ctx.fillText('K2=0.7', X(4.2), Y(2.6));
   } else {
     strokeCurve(curve.low, '#334155', []);
     strokeCurve(curve.high, '#64748b', [6, 4]);
     ctx.fillStyle = '#334155'; ctx.font = 'italic 10px sans-serif'; ctx.textAlign = 'left';
-    ctx.fillText('K=0.2', X(0.12), Y(0.45));
-    ctx.fillText('K=0.5', X(2.6), Y(1.15));
-    ctx.fillText('K=0.75', X(6.4), Y(3.4));
+    if(inView(0.12, 0.45)) ctx.fillText('K=0.2', X(0.12), Y(0.45));
+    if(inView(2.6, 1.15)) ctx.fillText('K=0.5', X(2.6), Y(1.15));
+    if(inView(6.4, 3.4)) ctx.fillText('K=0.75', X(6.4), Y(3.4));
     ctx.fillStyle = '#64748b';
-    ctx.fillText('K=0.6（高值）', X(1.6), Y(1.75));
-    ctx.fillText('低值', X(0.55), Y(0.9));
-    ctx.fillText('高值', X(7.0), Y(5.0));
+    if(inView(1.6, 1.75)) ctx.fillText('K=0.6（高值）', X(1.6), Y(1.75));
+    if(inView(0.55, 0.9)) ctx.fillText('低值', X(0.55), Y(0.9));
+    if(inView(7.0, 5.0)) ctx.fillText('高值', X(7.0), Y(5.0));
   }
 
-  /* 拐点标注（hv） */
+  /* 拐点标注（仅显示在量程内的拐点） */
   if(Array.isArray(curve)){
     ctx.fillStyle = '#94a3b8'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('0.8Ie', X(0.8), Y(0) + 20);
-    ctx.fillText('3Ie', X(3.0), Y(0) + 20);
+    if(xMax >= 0.8) ctx.fillText('0.8Ie', X(0.8), Y(0) + 20);
+    if(xMax >= 3.0) ctx.fillText('3Ie', X(3.0), Y(0) + 20);
   } else {
     ctx.fillStyle = '#94a3b8'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('0.5Ie', X(0.5), Y(0) + 20);
-    ctx.fillText('0.8Ie', X(0.8), Y(0) + 20);
-    ctx.fillText('6Ie', X(6.0), Y(0) + 20);
+    if(xMax >= 0.5) ctx.fillText('0.5Ie', X(0.5), Y(0) + 20);
+    if(xMax >= 0.8) ctx.fillText('0.8Ie', X(0.8), Y(0) + 20);
+    if(xMax >= 6.0) ctx.fillText('6Ie', X(6.0), Y(0) + 20);
   }
 
   /* 动作区文字 */
   ctx.fillStyle = 'rgba(51, 65, 85, 0.55)'; ctx.font = 'bold 11px sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('差动动作区', X(XMAX * 0.68), Y(yScale * 0.85));
+  ctx.fillText('差动动作区', X(xMax * 0.68), Y(yMax * 0.85));
 
   /* 运行点（A/B/C，黄/绿/红按相别；实心=动作，空心=不动作） */
   points.forEach(p => {
-    const x = X(Math.min(p.ir, XMAX)), y = Y(Math.min(p.id, yScale));
+    const x = X(Math.min(p.ir, xMax)), y = Y(Math.min(p.id, yMax));
     const c = COLORS[p.phase] || '#334155';
     ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2);
     if(p.trip){ ctx.fillStyle = c; ctx.fill(); }
