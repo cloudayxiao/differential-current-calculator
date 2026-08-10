@@ -289,7 +289,7 @@
       <div class="math">I<sub class="sub">d</sub> = |Σ 各侧补偿后电流|　　I<sub class="sub">r</sub> = <span class="frac"><span class="num">Σ |I′<sub class="sub">s</sub>|</span><span class="den">2</span></span>（固定除以 2，与侧数无关）</div>
       <p>式中 <span class="math">I′<sub class="sub">s</sub></span> 为第 s 侧补偿后电流的幅值。制动电流取各侧补偿后电流幅值之和的一半（固定除以 2，与侧数无关），与国电南自 PST1200U、南瑞继保 PCS978 等主流装置的比率制动形式一致。</p>
 
-      <p>5. <b>差动动作判据（V2.1，随转角方式选择厂家判据）</b>：</p>
+      <p>5. <b>差动动作判据（随转角方式选择厂家判据）</b>：</p>
       <p><b>① 高压侧转角（PST1200U 三折线）</b>——依据《PST-1200U 变压器保护装置说明书》稳态比率差动（图 3.2.1.2），拐点与斜率均为装置固定值，仅整定最小动作电流 <span class="math">I<sub class="sub">op.min</sub></span>（输入值，单位 Ie）：</p>
       <div class="math">I<sub class="sub">r</sub> &lt; 0.8I<sub class="sub">e</sub>　：　I<sub class="sub">d</sub> ≥ I<sub class="sub">op.min</sub></div>
       <div class="math">0.8I<sub class="sub">e</sub> ≤ I<sub class="sub">r</sub> &lt; 3I<sub class="sub">e</sub>　：　I<sub class="sub">d</sub> ≥ I<sub class="sub">op.min</sub> + 0.5 · (I<sub class="sub">r</sub> − 0.8I<sub class="sub">e</sub>)</div>
@@ -311,7 +311,7 @@
       <div class="math">I<sub class="sub">1</sub> = <span class="frac"><span class="num">I<sub class="sub">a</sub> + a · I<sub class="sub">b</sub> + a² · I<sub class="sub">c</sub></span><span class="den">3</span></span>　I<sub class="sub">2</sub> = <span class="frac"><span class="num">I<sub class="sub">a</sub> + a² · I<sub class="sub">b</sub> + a · I<sub class="sub">c</sub></span><span class="den">3</span></span>　I<sub class="sub">0</sub> = <span class="frac"><span class="num">I<sub class="sub">a</sub> + I<sub class="sub">b</sub> + I<sub class="sub">c</sub></span><span class="den">3</span></span></div>
       <p>正序分量对应平衡的三相系统；负序分量反映相序不对称；零序分量反映三相共模分量，是接地故障的特征量。</p>
 
-      <p>8. <b>图例（颜色与线型）</b>：相量图（图 1、图 2）中 H/M/L 分别表示高压侧/中压侧/低压侧。相色：A 相 <span style="color:var(--A)">黄色</span>、B 相 <span style="color:var(--B)">绿色</span>、C 相 <span style="color:var(--C)">红色</span>（电力行业标准相别色）。线型：H 实线、M 虚线、L 点划线（线宽 2.5 px）；差动电流以黑色虚线绘制（线宽 3 px，仅图 2）。动作特性曲线（图 3）图例：实线/虚线分别表示判据与高值（低压侧转角时），<span style="color:var(--A)">●</span> 黄点 = A 相、<span style="color:var(--B)">●</span> 绿点 = B 相、<span style="color:var(--C)">●</span> 红点 = C 相运行点，实心圆 = 动作、空心圆 = 不动作。</p>
+      <p>8. <b>图例（颜色与线型）</b>：相量图（图 1、图 2）中 H/M/L 分别表示高压侧/中压侧/低压侧。相色：A 相 <span style="color:var(--A)">黄色</span>、B 相 <span style="color:var(--B)">绿色</span>、C 相 <span style="color:var(--C)">红色</span>。线型：H 实线、M 虚线、L 点划线（线宽 2.5 px）；差动电流以黑色虚线绘制（线宽 3 px，仅图 2）。动作特性曲线（图 3）图例：实线/虚线分别表示判据与高值（低压侧转角时），<span style="color:var(--A)">●</span> 黄点 = A 相、<span style="color:var(--B)">●</span> 绿点 = B 相、<span style="color:var(--C)">●</span> 红点 = C 相运行点，实心圆 = 动作、空心圆 = 不动作。</p>
     </details>
   </section>
 </main>
