@@ -952,21 +952,44 @@ function drawIdIrCurve(canvas, fig3){
     return pts;
   };
   const strokeCurve = (pts, color, dash) => {
-    /* 顶部裁剪: 判据曲线高于 yMax 的线段截断于顶部边框处(与边框相接),
-     * 防止小量程下折线画出网格顶部(曲线单调递增, 一旦超出即截断) */
-    const clipped = [];
-    for(let i = 0; i < pts.length; i++){
-      const p = pts[i];
-      if(p.id <= yMax + 1e-9){ clipped.push(p); }
-      else if(clipped.length > 0){
-        const q = clipped[clipped.length - 1];
-        if(q.id < yMax - 1e-9){
-          const t = (yMax - q.id) / (p.id - q.id);
-          clipped.push({ ir: q.ir + t * (p.ir - q.ir), id: yMax });
-        }
-        break;
-      } else break;
-    }
+    /* 量程裁剪: 折线仅绘制于网格内 ——
+     * 1) 右侧裁剪: 判据数据定义域(8Ie)超过 xMax 的线段截断于右框(xMax),
+     *    防止 xMax < 8Ie 时折线越出网格右边界(如小/中制动电流场景);
+     * 2) 顶部裁剪: 高于 yMax 的线段截断于顶部框(yMax)。
+     * 判据曲线单调递增, 一旦超出即截断(线性插值求交点)。 */
+    const rightClip = ps => {
+      const out = [];
+      for(let i = 0; i < ps.length; i++){
+        const p = ps[i];
+        if(p.ir <= xMax + 1e-9){ out.push(p); }
+        else if(out.length > 0){
+          const q = out[out.length - 1];
+          if(q.ir < xMax - 1e-9){
+            const t = (xMax - q.ir) / (p.ir - q.ir);
+            out.push({ ir: xMax, id: q.id + t * (p.id - q.id) });
+          }
+          break;
+        } else break;
+      }
+      return out;
+    };
+    const topClip = ps => {
+      const out = [];
+      for(let i = 0; i < ps.length; i++){
+        const p = ps[i];
+        if(p.id <= yMax + 1e-9){ out.push(p); }
+        else if(out.length > 0){
+          const q = out[out.length - 1];
+          if(q.id < yMax - 1e-9){
+            const t = (yMax - q.id) / (p.id - q.id);
+            out.push({ ir: q.ir + t * (p.ir - q.ir), id: yMax });
+          }
+          break;
+        } else break;
+      }
+      return out;
+    };
+    const clipped = topClip(rightClip(pts));
     ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.setLineDash(dash);
     ctx.beginPath();
     clipped.forEach((p, i) => i === 0 ? ctx.moveTo(X(p.ir), Y(p.id)) : ctx.lineTo(X(p.ir), Y(p.id)));
