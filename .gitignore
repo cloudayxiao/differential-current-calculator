@@ -1,3 +1,9 @@
 # 本地工作目录 / 工具元数据
 .omo/
 .DS_Store
+
+# 厂家资料（仅本地参考，不推送至 GitHub）
+PCS-978T2-G*.pdf
+PST-1200U*.pdf
+pcs978.png
+pst1200u.png
