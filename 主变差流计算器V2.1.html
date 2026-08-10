@@ -952,9 +952,24 @@ function drawIdIrCurve(canvas, fig3){
     return pts;
   };
   const strokeCurve = (pts, color, dash) => {
+    /* 顶部裁剪: 判据曲线高于 yMax 的线段截断于顶部边框处(与边框相接),
+     * 防止小量程下折线画出网格顶部(曲线单调递增, 一旦超出即截断) */
+    const clipped = [];
+    for(let i = 0; i < pts.length; i++){
+      const p = pts[i];
+      if(p.id <= yMax + 1e-9){ clipped.push(p); }
+      else if(clipped.length > 0){
+        const q = clipped[clipped.length - 1];
+        if(q.id < yMax - 1e-9){
+          const t = (yMax - q.id) / (p.id - q.id);
+          clipped.push({ ir: q.ir + t * (p.ir - q.ir), id: yMax });
+        }
+        break;
+      } else break;
+    }
     ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.setLineDash(dash);
     ctx.beginPath();
-    pts.forEach((p, i) => i === 0 ? ctx.moveTo(X(p.ir), Y(p.id)) : ctx.lineTo(X(p.ir), Y(p.id)));
+    clipped.forEach((p, i) => i === 0 ? ctx.moveTo(X(p.ir), Y(p.id)) : ctx.lineTo(X(p.ir), Y(p.id)));
     ctx.stroke();
     ctx.setLineDash([]);
   };
