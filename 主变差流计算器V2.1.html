@@ -942,6 +942,12 @@ function drawIdIrCurve(canvas, fig3){
 
   /* 判据曲线（仅绘制量程内可见部分，canvas 自动裁剪超界线段） */
   const inView = (x, y) => x <= xMax && y <= yMax;
+  /* 动态量程超过判据定义域(8Ie)时, 按判据公式外推延伸折线至量程边缘 */
+  const extendTo = (pts, idFn) => {
+    const last = pts[pts.length - 1];
+    if(xMax > last.ir + 1e-9) return pts.concat([{ ir: xMax, id: idFn(xMax) }]);
+    return pts;
+  };
   const strokeCurve = (pts, color, dash) => {
     ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.setLineDash(dash);
     ctx.beginPath();
@@ -950,14 +956,14 @@ function drawIdIrCurve(canvas, fig3){
     ctx.setLineDash([]);
   };
   if(Array.isArray(curve)){
-    strokeCurve(curve, '#334155', []);
+    strokeCurve(extendTo(curve, x => ratioSetId(x, fig3.iop || 0, 'hv')), '#334155', []);
     ctx.fillStyle = '#334155'; ctx.font = 'italic 10px sans-serif';
     ctx.textAlign = 'left';
     if(inView(1.6, 0.5)) ctx.fillText('K1=0.5', X(1.6), Y(0.5));
     if(inView(4.2, 2.6)) ctx.fillText('K2=0.7', X(4.2), Y(2.6));
   } else {
-    strokeCurve(curve.low, '#334155', []);
-    strokeCurve(curve.high, '#64748b', [6, 4]);
+    strokeCurve(extendTo(curve.low, x => pcs978SetIdLow(x, fig3.iop || 0)), '#334155', []);
+    strokeCurve(extendTo(curve.high, x => pcs978SetIdHigh(x)), '#64748b', [6, 4]);
     ctx.fillStyle = '#334155'; ctx.font = 'italic 10px sans-serif'; ctx.textAlign = 'left';
     if(inView(0.12, 0.45)) ctx.fillText('K=0.2', X(0.12), Y(0.45));
     if(inView(2.6, 1.15)) ctx.fillText('K=0.5', X(2.6), Y(1.15));
