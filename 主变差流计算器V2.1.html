@@ -910,9 +910,12 @@ function drawIdIrCurve(canvas, fig3){
     ctx.fillText(iy.toFixed(1) + 'Ie', X(0) - 6, Y(iy));
     ctx.beginPath(); ctx.moveTo(X(0), Y(iy)); ctx.lineTo(X(xMax), Y(iy)); ctx.stroke();
   }
+  /* 网格外框（完整矩形，曲线延伸至量程边缘时收边于边框内） */
   ctx.strokeStyle = '#cbd5e1';
-  ctx.beginPath(); ctx.moveTo(X(0), Y(0)); ctx.lineTo(X(xMax), Y(0)); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(X(0), Y(yMax)); ctx.lineTo(X(0), Y(0)); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(X(0), Y(0)); ctx.lineTo(X(xMax), Y(0)); ctx.stroke();        /* 底 */
+  ctx.beginPath(); ctx.moveTo(X(xMax), Y(0)); ctx.lineTo(X(xMax), Y(yMax)); ctx.stroke();  /* 右 */
+  ctx.beginPath(); ctx.moveTo(X(xMax), Y(yMax)); ctx.lineTo(X(0), Y(yMax)); ctx.stroke();  /* 顶 */
+  ctx.beginPath(); ctx.moveTo(X(0), Y(yMax)); ctx.lineTo(X(0), Y(0)); ctx.stroke();        /* 左 */
 
   /* 轴标题 */
   ctx.fillStyle = '#334155'; ctx.font = 'bold 12px sans-serif';
