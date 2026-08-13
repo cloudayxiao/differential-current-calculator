@@ -982,8 +982,9 @@ function drawIdIrCurve(canvas, fig3){
     if(xMax > last.ir + 1e-9) return pts.concat([{ ir: xMax, id: idFn(xMax) }]);
     return pts;
   };
-  /* 曲线旁标签避让: 文字矩形与判据折线碰撞检测, 压线时沿垂直方向逐级外移
-   * (12px/档, 最多4档) 直到与折线分离, 双向取更近者 —— 标签始终贴线不压线 */
+  /* 曲线旁标签避让: 文字矩形(含 14px 视觉间距)与判据折线碰撞检测, 间距
+   * 不足或压线时沿垂直方向逐级外移(12px/档, 最多4档) 直到与折线分离,
+   * 双向取更近者 —— 标签始终贴线且保持清晰间距; 同时限制在画布内 */
   let polysPx = [];
   const segRectHit = (x1, y1, x2, y2, rx, ry, rw, rh) => {
     if(Math.max(x1, x2) < rx || Math.min(x1, x2) > rx + rw) return false;
@@ -1004,22 +1005,47 @@ function drawIdIrCurve(canvas, fig3){
   };
   const placeLabel = (s, x, y, pref) => {
     const w = ctx.measureText(s).width, h = 12;
-    const hit = dy => {
-      const rx = x - 4, ry = y - h - 4, rw = w + 8, rh = h + 8;
+    const GAP = 10;   /* 标签与折线最小视觉间距(px) */
+    /* 线段到矩形最小距离(不相交时): 端点-边投影 + 角-线段投影, 凸集完备 */
+    const segToRect = (x1, y1, x2, y2, rx, ry, rw, rh) => {
+      if(segRectHit(x1, y1, x2, y2, rx, ry, rw, rh)) return 0;
+      const p2s = (px, py, ax, ay, bx, by) => {
+        const dx = bx - ax, dy = by - ay;
+        const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy)));
+        return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+      };
+      return Math.min(
+        p2s(x1, y1, rx, ry, rx + rw, ry), p2s(x1, y1, rx + rw, ry, rx + rw, ry + rh),
+        p2s(x1, y1, rx + rw, ry + rh, rx, ry + rh), p2s(x1, y1, rx, ry + rh, rx, ry),
+        p2s(x2, y2, rx, ry, rx + rw, ry), p2s(x2, y2, rx + rw, ry, rx + rw, ry + rh),
+        p2s(x2, y2, rx + rw, ry + rh, rx, ry + rh), p2s(x2, y2, rx, ry + rh, rx, ry),
+        p2s(rx, ry, x1, y1, x2, y2), p2s(rx + rw, ry, x1, y1, x2, y2),
+        p2s(rx, ry + rh, x1, y1, x2, y2), p2s(rx + rw, ry + rh, x1, y1, x2, y2)
+      );
+    };
+    const gap = dy => {   /* 该档位间距; 出画布返回 -1 */
+      const rx = x - GAP, ry = y + dy - h - GAP, rw = w + GAP * 2, rh = h + GAP * 2;
+      if(ry < mt || ry + rh > cssH - mb) return -1;
+      let d = Infinity;
       for(const poly of polysPx){
         for(let i = 0; i + 1 < poly.length; i++){
-          if(segRectHit(poly[i][0], poly[i][1], poly[i + 1][0], poly[i + 1][1], rx, ry, rw, rh)) return true;
+          const dd = segToRect(poly[i][0], poly[i][1], poly[i + 1][0], poly[i + 1][1], rx, ry, rw, rh);
+          if(dd < d) d = dd;
+          if(d === 0) return 0;
         }
       }
-      return false;
+      return d;
     };
     const dirs = pref === 'up' ? [-1, 1] : pref === 'down' ? [1, -1] : [-1, 1];
+    let bestDy = 0, bestD = -1;
     for(const dir of dirs){
-      for(let n = 0; n <= 4; n++){
-        if(!hit(dir * n * 12)){ ctx.fillText(s, x, y + dir * n * 12); return; }
+      for(let n = 0; n <= 6; n++){
+        const dy = dir * n * 12, d = gap(dy);
+        if(d >= GAP){ ctx.fillText(s, x, y + dy); return; }   /* 达到间距即放置 */
+        if(d >= 0 && d > bestD){ bestD = d; bestDy = dy; }    /* 记最远安全档 */
       }
     }
-    ctx.fillText(s, x, y);   /* 兜底: 四档内无安全位时画原位 */
+    ctx.fillText(s, x, y + bestDy);   /* 兜底: 所有档位中最远离曲线者 */
   };
   const strokeCurve = (pts, color, dash) => {
     /* 量程裁剪: 折线仅绘制于网格内 ——
