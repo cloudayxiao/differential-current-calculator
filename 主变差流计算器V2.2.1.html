@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>主变差流计算器V2.2.1</title>
+<title>主变差流计算器</title>
 <meta name="author" content="Clouday Xiao">
 <meta name="copyright" content="Copyright (c) 2026 Clouday Xiao. Licensed under the MIT License.">
 <style>
@@ -117,7 +117,7 @@
 </head>
 <body>
 <header>
-  <h1>主变差流计算器V2.2</h1>
+  <h1>主变差流计算器</h1>
   <div class="conv-row">
     <span id="convLabel">角度约定：<b>超前角为正</b>（电流超前电压为正，高压侧 A 相电压为 0° 基准）</span>
     <button id="convBtn" class="primary">切换为：滞后角为正</button>
@@ -1082,7 +1082,7 @@ function drawIdIrCurve(canvas, fig3){
     const g = groups.find(grp => grp.some(o => Math.hypot(o.x - pt.x, o.y - pt.y) < 24));
     if(g) g.push(pt); else groups.push([pt]);
   });
-  const PHASE_OFF = { A: [7, -4], B: [14, 14], C: [-26, 10] };
+  const PHASE_OFF = { A: [7, -4], B: [14, 14], C: [-17, 10] };
   groups.forEach(grp => {
     grp.forEach((pt, gi) => {
       const c = COLORS[pt.p.phase] || '#334155';
