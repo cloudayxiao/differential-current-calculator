@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>主变差流计算器</title>
+<meta name="author" content="Clouday Xiao">
+<meta name="copyright" content="Copyright (c) 2026 Clouday Xiao. Licensed under the MIT License.">
+<style>
+  :root{
+    --accent:#2563eb; --accent-soft:#eff6ff; --border:#d8dee9; --text:#1e293b;
+    --muted:#64748b; --ok:#16a34a; --bad:#dc2626; --warn-bg:#fef2f2; --warn-bd:#fca5a5;
+    --card:#ffffff; --bg:#f1f5f9;
+--A:#FFE600;
+  --B:#00A650;
+  --C:#FF0000;
+    --pos:#16a34a; --neg:#dc2626; --zero:#8b5cf6;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    font-size:14px; line-height:1.5;}
+  header{padding:14px 20px; background:var(--card); border-bottom:1px solid var(--border);
+    display:flex; flex-wrap:wrap; gap:10px 18px; align-items:center; justify-content:space-between;}
+  header h1{font-size:18px; font-weight:700; white-space:nowrap;}
+  .conv-row{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+  .conv-row span{color:var(--muted);}
+  .conv-row b{color:var(--text);}
+  main{display:grid; grid-template-columns:380px minmax(0,1fr); gap:16px; padding:16px 20px; max-width:1600px; margin:0 auto;}
+  @media (max-width:768px){ main{grid-template-columns:minmax(0,1fr); padding:12px;} }
+  section.panel{background:var(--card); border:1px solid var(--border); border-radius:10px; padding:14px; min-width:0;}
+  fieldset{border:1px solid var(--border); border-radius:8px; padding:10px 12px; margin-bottom:12px;}
+  legend{font-weight:600; font-size:13px; padding:0 6px; color:var(--accent);}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+  .grid3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;}
+  label.f{display:flex; flex-direction:column; gap:3px; font-size:12px; color:var(--muted);}
+  label.f .lbl{display:block; min-height:2.4em; line-height:1.2;}   /* 标签文本预留两行，避免 Iop.min 长标签换行时输入框错位 */
+  input[type=number], input[type=text]{width:100%; padding:6px 8px; border:1px solid var(--border);
+    border-radius:6px; font-size:14px; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    color:var(--text); background:#fff;}
+  input:focus{outline:2px solid var(--accent); outline-offset:-1px; border-color:var(--accent);}
+  input.err{border-color:var(--bad); background:var(--warn-bg);}
+  .radio-row{display:flex; gap:16px; align-items:center; font-size:13px; padding:2px 0;}
+  .radio-row label{display:flex; align-items:center; gap:5px; cursor:pointer;}
+  .tm-hint{font-size:12px; color:var(--muted); margin:0 0 2px; line-height:1.5;}
+  details{font-size:13px; margin-top:14px;}
+  details p{margin:8px 0; line-height:1.7;}
+  details p.s1{margin-top:2px;}
+  .math{display:inline-flex; align-items:center; vertical-align:middle; margin:0 3px; font-family:inherit; font-size:1em; white-space:nowrap;}
+  .frac{display:inline-flex; flex-direction:column; vertical-align:middle; text-align:center; margin:0 3px; line-height:1.15;}
+  .frac .num{border-bottom:1px solid currentColor; padding:0 3px;}
+  .frac .den{padding:1px 3px 0;}
+  .sub, .sup{font-size:.72em;}
+  table.ph{width:100%; border-collapse:collapse; margin-top:8px; font-size:13px;}
+  table.ph th{font-size:12px; color:var(--muted); font-weight:600; text-align:left;
+    padding:4px 6px; border-bottom:1px solid var(--border);}
+  table.ph td{padding:4px 6px;}
+  table.ph td.ph{color:var(--accent); font-weight:700;}
+  .btnrow{display:flex; flex-wrap:wrap; gap:8px; margin-top:4px;}
+  button{cursor:pointer; border:1px solid var(--border); background:#fff; color:var(--text);
+    border-radius:7px; padding:7px 12px; font-size:13px; font-weight:600; transition:all .12s;}
+  button:hover{border-color:var(--accent); color:var(--accent); background:var(--accent-soft);}
+  button.primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+  button.primary:hover{background:#1d4ed8; color:#fff;}
+  button.dirty{border-color:#f59e0b; color:#b45309; background:#fffbeb;}
+  #alertBox{display:none; background:var(--warn-bg); border:1px solid var(--warn-bd); color:var(--bad);
+    border-radius:8px; padding:10px 12px; margin-bottom:12px; font-size:13px; font-weight:600;}
+  #alertBox.show{display:block;}
+  #figRow{display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:16px; margin-bottom:16px;}
+  @media (max-width:768px){ #figRow{grid-template-columns:minmax(0,1fr);} }
+  figure{background:#fff; border:1px solid var(--border); border-radius:10px; padding:10px; text-align:center; min-width:0;}
+  figure canvas{width:100%; height:auto; display:block; aspect-ratio:460/340; max-width:620px; margin:0 auto;}
+  #canvas3{aspect-ratio:460/380;}
+  figcaption{font-size:13px; font-weight:700; margin-top:8px; color:var(--text);}
+  .legend{display:flex; flex-wrap:wrap; gap:6px 14px; justify-content:center; margin-top:8px; font-size:12px; color:var(--muted);}
+  .legend span{display:inline-flex; align-items:center; gap:5px;}
+  .swatch{display:inline-block; width:22px; height:0; border-top-width:3px; border-top-style:solid; border-top-color:#000;}
+  .swatch.cA{border-top-color:var(--A);} .swatch.cB{border-top-color:var(--B);} .swatch.cC{border-top-color:var(--C);}
+  .swatch.sHV{border-top-style:solid;} .swatch.sMV{border-top-style:dashed;} .swatch.sLV{border-top-style:dotted;}
+  /* 差动电流：点划线（长划 10 + 短点 3，与画布 dash [10,5,3,5] 一致，区别于中压侧虚线） */
+  .swatch.sDiff{height:3px; border-top:none; background:repeating-linear-gradient(90deg,#000 0 10px,transparent 10px 15px,#000 15px 18px,transparent 18px 23px);}
+  .swatch.sIcdsd{border-top:3px dashed var(--bad);}
+  .swatch.sPos{border-top:3px solid var(--pos);}
+  .swatch.sNeg{border-top:3px solid var(--neg);}
+  .swatch.sZero{border-top:3px solid var(--zero);}
+  .swatch.dot{width:10px; height:10px; border:none; border-radius:50%; background:#000;}
+  .swatch.dotA{background:var(--A);} .swatch.dotB{background:var(--B);} .swatch.dotC{background:var(--C);}
+  .swatch.dotHollow{background:#fff; border:2px solid #64748b;}
+  .tbl-wrap{overflow-x:auto; margin-bottom:2px;}
+  table.res{width:100%; border-collapse:collapse; font-size:13px; margin-bottom:14px;}
+  table.res caption{text-align:left; font-weight:700; font-size:14px; padding:6px 2px;}
+  table.res th{background:var(--accent-soft); color:var(--accent); text-align:left;
+    padding:7px 10px; border:1px solid var(--border); font-size:12px; white-space:nowrap;}
+  table.res td{padding:7px 10px; border:1px solid var(--border); text-align:right; white-space:nowrap;}
+  table.res td:first-child, table.res th:first-child{text-align:left;}
+  table.res tr:nth-child(even) td{background:#f8fafc;}
+  .badge{display:inline-block; padding:2px 9px; border-radius:20px; font-size:12px; font-weight:700;}
+  .badge.ok{background:#dcfce7; color:var(--ok);}
+  .badge.bad{background:#fee2e2; color:var(--bad);}
+  .dir-in{color:var(--ok); font-weight:700;} .dir-out{color:var(--bad); font-weight:700;}
+  .seq-pos{color:var(--pos); font-weight:700;} .seq-neg{color:var(--neg); font-weight:700;} .seq-zero{color:var(--zero); font-weight:700;}
+  details{margin-top:14px; font-size:12px; color:var(--muted);}
+  details summary{cursor:pointer; font-weight:600; color:var(--text); margin-bottom:6px;}
+  details p{margin:4px 0; padding-left:8px; border-left:3px solid var(--border);}
+  code{background:#f1f5f9; padding:1px 5px; border-radius:4px; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px;}
+  .three-only{display:block;}
+  body.two .three-only{display:none;}
+  footer{margin:0 auto; max-width:1600px; padding:8px 20px 20px; text-align:center;
+    color:var(--muted); font-size:12px;}
+  footer a{color:inherit; text-decoration:none; border-bottom:1px dotted var(--muted);}
+  footer a:hover{color:var(--accent, #2563eb); border-bottom-style:solid;}
+  @media (max-width:768px){
+    table.res th, table.res td{padding:4px 3px; font-size:11px;}
+    table.res th{white-space:normal; line-height:1.3;}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>主变差流计算器</h1>
+  <div class="conv-row">
+    <span id="convLabel">角度约定：<b>超前角为正</b>（电流超前电压为正，高压侧 A 相电压为 0° 基准）</span>
+    <button id="convBtn" class="primary">切换为：滞后角为正</button>
+  </div>
+</header>
+
+<main>
+  <!-- ============ 输入面板 ============ -->
+  <section class="panel">
+    <fieldset id="fsCommon">
+      <legend>变压器参数</legend>
+      <div class="radio-row">
+        <label><input type="radio" name="winding" id="wTwo" value="two" checked>两绕组 (Yd11)</label>
+        <label><input type="radio" name="winding" id="wThree" value="three">三绕组 (YYd11)</label>
+      </div>
+      <div class="radio-row">
+        <span class="g">转角方式：</span>
+        <label title="星形侧 Y→Δ 变换（三角形侧不变）；差动判据按国电南自 PST1200U 三折线比率制动"><input type="radio" name="transformMethod" id="tmHv" value="hv" checked>高压侧转角（PST1200U）</label>
+        <label title="星形侧减零序 + 三角形侧 Δ→Y 变换；差动判据按南瑞继保 PCS978 稳态比率差动（低值 + 高值）"><input type="radio" name="transformMethod" id="tmLv" value="lv">低压侧转角（PCS978）</label>
+      </div>
+      <div class="tm-hint" id="tmHint"></div>
+      <div class="grid3" style="margin-top:8px;">
+        <label class="f"><span class="lbl">额定容量 S (MVA)</span><input type="number" id="inS" step="any" min="0"></label>
+        <label class="f"><span class="lbl" id="lblIop">差动最小动作电流 Iop.min (Ie)</span><input type="number" id="inIop" step="any" min="0"></label>
+        <label class="f"><span class="lbl" id="lblIcdsd">差动速断电流 Icdsd (Ie)</span><input type="number" id="inIcdsd" step="any" min="0"></label>
+      </div>
+    </fieldset>
+
+    <fieldset id="fsHV">
+      <legend id="lgHV">高压侧（星形 Y）</legend>
+      <div class="grid2">
+        <label class="f">额定电压 U (kV)<input type="number" id="inHV_U" step="any" min="0"></label>
+        <label class="f">CT 变比<input type="text" id="inHV_CT" placeholder="如 600/5、600:5 或 120"></label>
+      </div>
+      <div class="radio-row" style="margin-top:6px;">
+        <label><input type="radio" name="hvUnit" id="hvUnitA" value="A" checked>电流单位：A</label>
+        <label><input type="radio" name="hvUnit" id="hvUnitmA" value="mA">mA</label>
+      </div>
+      <table class="ph">
+        <thead><tr><th>相</th><th>幅值 (<span class="unitLbl" id="unitLbl_hv">A</span>)</th><th>相角 (°)</th></tr></thead>
+        <tbody>
+          <tr><td class="ph">A</td><td><input type="number" id="inHV_Ia" step="any"></td><td><input type="number" id="inHV_Aa" step="any"></td></tr>
+          <tr><td class="ph">B</td><td><input type="number" id="inHV_Ib" step="any"></td><td><input type="number" id="inHV_Ab" step="any"></td></tr>
+          <tr><td class="ph">C</td><td><input type="number" id="inHV_Ic" step="any"></td><td><input type="number" id="inHV_Ac" step="any"></td></tr>
+        </tbody>
+      </table>
+    </fieldset>
+
+    <fieldset id="fsMV" class="three-only">
+      <legend id="lgMV">中压侧（星形 Y）</legend>
+      <div class="grid2">
+        <label class="f">额定电压 U (kV)<input type="number" id="inMV_U" step="any" min="0"></label>
+        <label class="f">CT 变比<input type="text" id="inMV_CT" placeholder="如 600/5、600:5 或 120"></label>
+      </div>
+      <div class="radio-row" style="margin-top:6px;">
+        <label><input type="radio" name="mvUnit" id="mvUnitA" value="A" checked>电流单位：A</label>
+        <label><input type="radio" name="mvUnit" id="mvUnitmA" value="mA">mA</label>
+      </div>
+      <table class="ph">
+        <thead><tr><th>相</th><th>幅值 (<span class="unitLbl" id="unitLbl_mv">A</span>)</th><th>相角 (°)</th></tr></thead>
+        <tbody>
+          <tr><td class="ph">A</td><td><input type="number" id="inMV_Ia" step="any"></td><td><input type="number" id="inMV_Aa" step="any"></td></tr>
+          <tr><td class="ph">B</td><td><input type="number" id="inMV_Ib" step="any"></td><td><input type="number" id="inMV_Ab" step="any"></td></tr>
+          <tr><td class="ph">C</td><td><input type="number" id="inMV_Ic" step="any"></td><td><input type="number" id="inMV_Ac" step="any"></td></tr>
+        </tbody>
+      </table>
+    </fieldset>
+
+    <fieldset id="fsLV">
+      <legend id="lgLV">低压侧（三角形 D）</legend>
+      <div class="grid2">
+        <label class="f">额定电压 U (kV)<input type="number" id="inLV_U" step="any" min="0"></label>
+        <label class="f">CT 变比<input type="text" id="inLV_CT" placeholder="如 600/5、600:5 或 120"></label>
+      </div>
+      <div class="radio-row" style="margin-top:6px;">
+        <label><input type="radio" name="lvUnit" id="lvUnitA" value="A" checked>电流单位：A</label>
+        <label><input type="radio" name="lvUnit" id="lvUnitmA" value="mA">mA</label>
+      </div>
+      <table class="ph">
+        <thead><tr><th>相</th><th>幅值 (<span class="unitLbl" id="unitLbl_lv">A</span>)</th><th>相角 (°)</th></tr></thead>
+        <tbody>
+          <tr><td class="ph">A</td><td><input type="number" id="inLV_Ia" step="any"></td><td><input type="number" id="inLV_Aa" step="any"></td></tr>
+          <tr><td class="ph">B</td><td><input type="number" id="inLV_Ib" step="any"></td><td><input type="number" id="inLV_Ab" step="any"></td></tr>
+          <tr><td class="ph">C</td><td><input type="number" id="inLV_Ic" step="any"></td><td><input type="number" id="inLV_Ac" step="any"></td></tr>
+        </tbody>
+      </table>
+    </fieldset>
+
+    <div class="btnrow">
+      <button id="calcBtn" class="primary">计算</button>
+      <button id="presetA">应用预设 A（双绕组平衡）</button>
+      <button id="presetB" style="display:none">应用预设 B（三绕组）</button>
+      <button id="resetBtn">重置</button>
+    </div>
+  </section>
+
+  <!-- ============ 结果面板 ============ -->
+  <section class="panel">
+    <div id="alertBox"></div>
+
+    <div id="figRow">
+      <figure>
+        <canvas id="canvas1" width="460" height="340"></canvas>
+        <figcaption>图 1　原始二次电流相量图（向量长度 = 各侧电流 / 该侧额定电流 Ie，标幺值）</figcaption>
+        <div class="legend" id="fig1Legend"></div>
+      </figure>
+      <figure>
+        <canvas id="canvas2" width="460" height="340"></canvas>
+        <figcaption id="fig2Caption">图 2　幅值平衡与相位校正后（差动域，单位 A）</figcaption>
+        <div class="legend" id="fig2Legend"></div>
+      </figure>
+      <figure>
+        <canvas id="canvas3" width="460" height="340"></canvas>
+        <figcaption id="fig3Caption">图 3　差动动作特性曲线（Id–Ir）</figcaption>
+        <div class="legend" id="fig3Legend"></div>
+      </figure>
+    </div>
+
+    <div class="tbl-wrap">
+      <table class="res" id="tblSymComp">
+        <caption>各侧输入电流对称分量（正序 / 负序 / 零序）—— 基于原始二次电流（单位：A）</caption>
+        <thead>
+          <tr>
+            <th>侧</th>
+            <th colspan="2">正序</th>
+            <th colspan="2">负序</th>
+            <th colspan="2">零序</th>
+          </tr>
+          <tr>
+            <th></th>
+            <th>幅值 (A)</th><th>相角 (°)</th>
+            <th>幅值 (A)</th><th>相角 (°)</th>
+            <th>幅值 (A)</th><th>相角 (°)</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="tbl-wrap">
+      <table class="res" id="tblPower">
+        <caption>各侧功率（以高压侧 A 相电压为 0° 基准，S = V·I*）</caption>
+        <thead><tr><th>侧</th><th>U (kV)</th><th>CT 变比</th><th>Ie (A)</th><th>K_bal</th><th>P (MW)</th><th>Q (Mvar)</th><th>方向</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="tbl-wrap">
+      <table class="res" id="tblDiff">
+        <caption id="diffCaption">差动电流、比率制动判据与差动速断（Id &gt; Id.set 或 Id ≥ Icdsd 时动作；Ie 为高压侧二次额定电流，Id.set 按所选厂家判据计算，Icdsd 为差动速断电流整定值）</caption>
+        <thead><tr><th>相</th><th>Id (Ie)</th><th>Ir (Ie)</th><th>Id.set (Ie)</th><th>Icdsd (Ie)</th><th>结果</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <details>
+      <summary>计算说明（点击展开）</summary>
+      <p class="s1">1. <b>角度基准与相角约定</b>：始终以高压侧 A 相电压为 0° 基准。默认约定<b>超前角为正</b>（电流超前电压时相角为正）；可切换为<b>滞后角为正</b>（电流滞后电压时相角为正）。切换约定时，输入角度按 <span class="math">θ′ = (360° − θ) mod 360°</span> 换算，同一电流对应的物理相量保持不变。相量图遵循数学惯例：0° 沿水平向右，角度以逆时针为正。</p>
+
+      <p>2. <b>额定电流 Ie 与幅值平衡（平衡系数）</b>：各侧额定电流 Ie 按额定容量、额定电压与 CT（电流互感器）变比折算：</p>
+      <div class="math">I<sub class="sub">e</sub> = <span class="frac"><span class="num">S</span><span class="den">√3 · U · n<span class="sub">CT</span></span></span></div>
+      <p>式中 <span class="math">U</span> 为该侧额定线电压（kV），<span class="math">n<sub class="sub">CT</sub></span> 为 CT 变比。以高压侧为基准（<span class="math">K<sub class="sub">bal</sub>(H) = 1</span>）：</p>
+      <div class="math">K<sub class="sub">bal</sub>(s) = <span class="frac"><span class="num">I<sub class="sub">e</sub>(H)</span><span class="den">I<sub class="sub">e</sub>(s)</span></span></div>
+      <p>式中 <span class="math">s</span> 为任一侧，<span class="math">H</span> 为高压侧。</p>
+      <p>幅值平衡（平衡补偿）：<span class="math">I<sub class="sub">bal</sub> = I<sub class="sub">2</sub> · K<sub class="sub">bal</sub></span>（仅幅值缩放，相位不变）。</p>
+
+      <p>3. <b>相位校正（转角）</b>：为消除 Y/Δ 接线引起的相位差，各侧电流须经相位校正后再进入差动计算，两种方式可选：</p>
+      <p><b>① 高压侧转角</b>（星形侧进行 Y→Δ 变换，三角形侧不变）：国内绝大多数装置采用该方式（如国电南自 PST1200U/PST-1202、四方 CSC-326、长园深瑞 PRS-778、许继 WBH-801、南瑞继保 RCS-985 等）。</p>
+      <div class="math">I′<sub class="sub">a</sub> = <span class="frac"><span class="num">I<sub class="sub">a</sub> − I<sub class="sub">b</sub></span><span class="den">√3</span></span>　I′<sub class="sub">b</sub> = <span class="frac"><span class="num">I<sub class="sub">b</sub> − I<sub class="sub">c</sub></span><span class="den">√3</span></span>　I′<sub class="sub">c</sub> = <span class="frac"><span class="num">I<sub class="sub">c</sub> − I<sub class="sub">a</sub></span><span class="den">√3</span></span></div>
+      <p><b>② 低压侧转角</b>（角转星方式：星形侧减去零序电流，三角形侧进行 Δ→Y 变换；以南瑞继保 RCS-978 / 国电南瑞 PCS-978 系列为代表）：</p>
+      <p>星形侧：<span class="math">I′<sub class="sub">i</sub> = I<sub class="sub">i</sub> − I<sub class="sub">0</sub></span>，其中 <span class="math">I<sub class="sub">0</sub> = <span class="frac"><span class="num">I<sub class="sub">a</sub> + I<sub class="sub">b</sub> + I<sub class="sub">c</sub></span><span class="den">3</span></span></span>。</p>
+      <p>三角形侧：<span class="math">I′<sub class="sub">a</sub> = <span class="frac"><span class="num">I<sub class="sub">a</sub> − I<sub class="sub">c</sub></span><span class="den">√3</span></span></span>　<span class="math">I′<sub class="sub">b</sub> = <span class="frac"><span class="num">I<sub class="sub">b</sub> − I<sub class="sub">a</sub></span><span class="den">√3</span></span></span>　<span class="math">I′<sub class="sub">c</sub> = <span class="frac"><span class="num">I<sub class="sub">c</sub> − I<sub class="sub">b</sub></span><span class="den">√3</span></span></span>。</p>
+      <p>两种方式在正常运行（无内部故障）时补偿后差动电流一致（数学等价），<span class="math">I<sub class="sub">d</sub> ≈ 0</span>；仅在存在不平衡电流或零序分量时，补偿后电流相量的表达形式不同。两种方式对应的差动动作判据不同（见第 5 条：高压侧转角按 PST1200U 三折线、低压侧转角按 PCS978 低值/高值判据）。经幅值平衡与相位校正后的电流统称为<b>补偿后电流</b>，后续差动计算均基于补偿后电流。</p>
+
+      <p>4. <b>差动电流与制动电流</b>：</p>
+      <div class="math">I<sub class="sub">d</sub> = |Σ I′<sub class="sub">s</sub>|　　I<sub class="sub">r</sub> = <span class="frac"><span class="num">Σ |I′<sub class="sub">s</sub>|</span><span class="den">2</span></span></div>
+      <p>式中 <span class="math">I′<sub class="sub">s</sub></span> 为第 s 侧补偿后电流的幅值。制动电流取各侧补偿后电流幅值之和的一半（固定除以 2，与侧数无关），与国电南自 PST1200U、南瑞继保 PCS978 等主流装置的比率制动形式一致。</p>
+
+      <p>5. <b>差动动作判据（随转角方式选择厂家判据）</b>：</p>
+      <p><b>① 高压侧转角（PST1200U 三折线）</b>——按 PST1200U 稳态比率差动判据，拐点与斜率均为装置固定值，仅整定最小动作电流 <span class="math">I<sub class="sub">op.min</sub></span>（输入值，单位 Ie）：</p>
+      <div class="math">I<sub class="sub">r</sub> &lt; 0.8I<sub class="sub">e</sub>　：　I<sub class="sub">d</sub> ≥ I<sub class="sub">op.min</sub></div>
+      <div class="math">0.8I<sub class="sub">e</sub> ≤ I<sub class="sub">r</sub> &lt; 3I<sub class="sub">e</sub>　：　I<sub class="sub">d</sub> ≥ I<sub class="sub">op.min</sub> + 0.5 · (I<sub class="sub">r</sub> − 0.8I<sub class="sub">e</sub>)</div>
+      <div class="math">I<sub class="sub">r</sub> ≥ 3I<sub class="sub">e</sub>　：　I<sub class="sub">d</sub> ≥ I<sub class="sub">op.min</sub> + 0.5 · 2.2I<sub class="sub">e</sub> + 0.7 · (I<sub class="sub">r</sub> − 3I<sub class="sub">e</sub>)</div>
+      <p>拐点 1 取 <span class="math">0.8I<sub class="sub">e</sub></span>、拐点 2 取 <span class="math">3I<sub class="sub">e</sub></span>；斜率 1 取 <span class="math">0.5</span>、斜率 2 取 <span class="math">0.7</span>（装置固定，无需整定）。</p>
+      <p><b>② 低压侧转角（PCS978 稳态比率差动）</b>——按 PCS-978 稳态比率差动判据（低值 + 高值），启动电流 <span class="math">I<sub class="sub">cdqd</sub></span> 为输入值（单位 Ie），比率制动系数 <span class="math">K<sub class="sub">bl</sub> = 0.5</span> 装置固定：</p>
+      <p>低值判据：</p>
+      <div class="math">I<sub class="sub">r</sub> ≤ 0.5I<sub class="sub">e</sub>　：　I<sub class="sub">d</sub> &gt; I<sub class="sub">cdqd</sub> + 0.2 · I<sub class="sub">r</sub></div>
+      <div class="math">0.5I<sub class="sub">e</sub> &lt; I<sub class="sub">r</sub> ≤ 6I<sub class="sub">e</sub>　：　I<sub class="sub">d</sub> &gt; I<sub class="sub">cdqd</sub> + 0.5 · (I<sub class="sub">r</sub> − 0.5I<sub class="sub">e</sub>) + 0.1I<sub class="sub">e</sub></div>
+      <div class="math">I<sub class="sub">r</sub> &gt; 6I<sub class="sub">e</sub>　：　I<sub class="sub">d</sub> &gt; I<sub class="sub">cdqd</sub> + 0.5 · 5.5I<sub class="sub">e</sub> + 0.75 · (I<sub class="sub">r</sub> − 6I<sub class="sub">e</sub>) + 0.1I<sub class="sub">e</sub></div>
+      <p>高值判据（<span class="math">I<sub class="sub">r</sub> &gt; 0.8I<sub class="sub">e</sub></span> 时）：</p>
+      <div class="math">I<sub class="sub">d</sub> &gt; 1.2I<sub class="sub">e</sub> + 0.6 · (I<sub class="sub">r</sub> − 0.8I<sub class="sub">e</sub>)</div>
+      <p>动作门槛取低值与高值之较小者（任一满足即动作）。结果表中 <span class="math">I<sub class="sub">d</sub></span>、<span class="math">I<sub class="sub">r</sub></span>、<span class="math">I<sub class="sub">d.set</sub></span> 均以额定电流 <span class="math">I<sub class="sub">e</sub></span>（= 高压侧二次额定电流）的倍数显示。</p>
+      <p><b>③ 动作特性曲线（图 3）</b>：按所选厂家判据实时绘制 <span class="math">I<sub class="sub">d</sub>–I<sub class="sub">r</sub></span> 曲线，横轴为制动电流 <span class="math">I<sub class="sub">r</sub></span>、纵轴为差动电流 <span class="math">I<sub class="sub">d</sub></span>，均以 <span class="math">I<sub class="sub">e</sub></span> 为单位；横纵坐标范围缺省 8Ie，数据点超出缺省值时两轴按相同比例自动缩放。高压侧转角绘制 PST1200U 三折线；低压侧转角绘制 PCS978 低值（三段）+ 高值两组曲线（高值以虚线区分）。判据曲线上方以灰色阴影标示<b>差动动作区</b>，曲线下方为制动（不动作）区；拐点（0.8Ie/3Ie 或 0.5Ie/6Ie）与各段斜率（K1=0.5/K2=0.7，或 K=0.2/0.5/0.75、高值 K=0.6）标注于图中对应位置。差动速断整定线 <span class="math">I<sub class="sub">cdsd</sub></span> 以红色水平虚线绘于判据曲线上方（仅当整定值在当前量程内时显示），其上方区域为<b>差动速断动作区</b>。计算所得的 A/B/C 三相运行点 <span class="math">(I<sub class="sub">r</sub>, I<sub class="sub">d</sub>)</span> 以相别颜色（黄 A / 绿 B / 红 C）圆点标入图中，<b>实心圆 = 动作、空心圆 = 不动作</b>，与结果表动作结论一致；运行点落入阴影区即表示该相差动保护动作。</p>
+
+      <p><b>④ 差动速断</b>：输入参数 <span class="math">I<sub class="sub">cdsd</sub></span> 为差动速断电流定值，以额定电流 <span class="math">I<sub class="sub">e</sub></span> 为倍数（缺省 <span class="math">6I<sub class="sub">e</sub></span>，PST-1200U 整定范围 4~10I<sub class="sub">e</sub>，PCS-978 典型整定 6~8I<sub class="sub">e</sub>）：</p>
+      <div class="math">I<sub class="sub">d</sub> ≥ I<sub class="sub">cdsd</sub>　→　差动速断动作</div>
+      <p>差动速断用于在变压器区内发生严重故障（差动电流远大于额定值）时快速切除变压器：<b>不经二次谐波闭锁、不经五次谐波闭锁、不经 CT 断线闭锁，瞬时动作</b>（无延时），优先于比率差动保护。结果表中任一相满足 <span class="math">I<sub class="sub">d</sub> &gt; I<sub class="sub">d.set</sub></span>（比率制动）或 <span class="math">I<sub class="sub">d</sub> ≥ I<sub class="sub">cdsd</sub></span>（差动速断）即报「动作」。</p>
+
+      <p>6. <b>功率</b>：一次电流 <span class="math">I<sub class="sub">1</sub> = I<sub class="sub">2</sub> · n<sub class="sub">CT</sub></span>；相电压 <span class="math">V<sub class="sub">ph</sub> = <span class="frac"><span class="num">U · 1000</span><span class="den">√3</span></span></span>（<span class="math">U</span> 为额定线电压，kV；<span class="math">V<sub class="sub">ph</sub></span> 为相电压，V）。电压相角以高压侧 A 相电压为 0° 基准：高压侧、中压侧（星形）A/B/C 相分别为 0°、−120°、120°；低压侧（三角形）A/B/C 相分别为 30°、−90°、150°。每相复功率 <span class="math">S = V · I<sup class="sup">∗</sup>，P = Re(S)，Q = Im(S)</span>；<span class="math">P &gt; 0</span> 表示功率流入变压器，<span class="math">P &lt; 0</span> 表示功率流出。</p>
+
+      <p>7. <b>对称分量</b>：基于原始二次电流（未经幅值平衡与相位校正）计算，其中 <span class="math">a = 1∠120°</span> 为旋转因子：</p>
+      <div class="math">I<sub class="sub">1</sub> = <span class="frac"><span class="num">I<sub class="sub">a</sub> + a · I<sub class="sub">b</sub> + a² · I<sub class="sub">c</sub></span><span class="den">3</span></span>　I<sub class="sub">2</sub> = <span class="frac"><span class="num">I<sub class="sub">a</sub> + a² · I<sub class="sub">b</sub> + a · I<sub class="sub">c</sub></span><span class="den">3</span></span>　I<sub class="sub">0</sub> = <span class="frac"><span class="num">I<sub class="sub">a</sub> + I<sub class="sub">b</sub> + I<sub class="sub">c</sub></span><span class="den">3</span></span></div>
+      <p>正序分量对应平衡的三相系统；负序分量反映相序不对称；零序分量反映三相共模分量，是接地故障的特征量。</p>
+
+      <p>8. <b>图例（颜色与线型）</b>：相量图（图 1、图 2）中 H/M/L 分别表示高压侧/中压侧/低压侧。相色：A 相 <span style="color:var(--A)">黄色</span>、B 相 <span style="color:var(--B)">绿色</span>、C 相 <span style="color:var(--C)">红色</span>。线型：H 实线、M 虚线、L 点线（线宽 2.5 px）；差动电流以黑色点划线绘制（线宽 3 px，仅图 2）。图 1（原始二次电流相量图）中各侧向量长度以该侧二次额定电流 Ie 为基准折算为倍数（长度 = 电流 / Ie），以消除各侧 CT 变比不同造成的幅值悬殊、便于跨侧比较；图 2（补偿后相量图）仍按二次安培（A）绘制。动作特性曲线（图 3）图例：实线/虚线分别表示判据与高值（低压侧转角时），<span style="color:var(--A)">●</span> 黄点 = A 相、<span style="color:var(--B)">●</span> 绿点 = B 相、<span style="color:var(--C)">●</span> 红点 = C 相运行点，实心圆 = 动作、空心圆 = 不动作。</p>
+    </details>
+  </section>
+</main>
+
+<footer>
+  © 2026 <a href="https://github.com/cloudayxiao" target="_blank" rel="noopener">Clouday Xiao</a> · <a href="https://github.com/cloudayxiao/differential-current-calculator" target="_blank" rel="noopener">主变差流计算器</a> V2.3 · 基于 MIT 许可证授权发布
+</footer>
+
+<script>
+'use strict';
+/* ============================================================
+ * 主变差流计算器V2.2
+ * 约定：内部统一使用"超前角为正"的物理相量域（A 域）。
+ * 输入角度按当前约定显示；计算时转换到物理域。
+ * V1.3：转角方式可选 —— 高压侧转角（星侧 Y-Δ，默认）
+ *   或低压侧转角（星侧减零序 + Δ侧 Δ-Y）；对称分量计算。
+ * V1.4：制动电流统一为 Ir = (Σ|I′|)/2（固定除以 2，与侧数无关）。
+ * V2.1：差动判据厂家化 —— 转角方式绑定判据：
+ *   高压侧转角 → 国电南自 PST1200U 三折线比率制动（拐点 0.8Ie/3Ie，斜率 0.5/0.7）
+ *   低压侧转角 → 南瑞继保 PCS978 稳态比率差动（低值公式3.4-1 + 高值公式3.4-2）
+ *   新增输入参数：差动最小动作电流 Iop.min（PST1200U）/ 差动启动电流 Icdqd（PCS978）
+ * V2.2 新增：差动速断保护 ——
+ *   输入参数差动速断电流 Icdsd（缺省 6Ie，范围 4~10Ie，依据 PST-1200U/PCS-978 说明书）
+ *   判据：Id ≥ Icdsd 时保护瞬时动作，不经谐波/CT断线闭锁，优先于比率差动
+ *   图 3 增加速断水平折线（红色虚线，Id = Icdsd），结果表增加 Icdsd 列
+ * 作者：Clouday Xiao
+ * 版权：Copyright (c) 2026 Clouday Xiao，基于 MIT 许可证授权。
+ * ============================================================ */
+const $ = id => document.getElementById(id);
+const D2R = Math.PI / 180;
+
+/* ---------------- 复数工具 ---------------- */
+function cFromPolar(mag, deg){ const r = deg * D2R; return { re: mag*Math.cos(r), im: mag*Math.sin(r) }; }
+function cToPolar(c){ return { mag: Math.hypot(c.re, c.im), deg: (Math.atan2(c.im, c.re)/D2R + 360) % 360 }; }
+function cAdd(a, b){ return { re: a.re + b.re, im: a.im + b.im }; }
+function cSub(a, b){ return { re: a.re - b.re, im: a.im - b.im }; }
+function cScale(a, s){ return { re: a.re * s, im: a.im * s }; }
+function cConj(a){ return { re: a.re, im: -a.im }; }
+function cMul(a, b){ return { re: a.re*b.re - a.im*b.im, im: a.re*b.im + a.im*b.re }; }
+const normDeg = d => ((d % 360) + 360) % 360;
+
+/* 复数除以实数 */
+function cDivReal(c, n){ return { re: c.re / n, im: c.im / n }; }
+
+/* 运算符 a = 1∠120° */
+const OP_A = { re: Math.cos(120 * D2R), im: Math.sin(120 * D2R) };  // -0.5 + j0.866
+const OP_A2 = { re: Math.cos(240 * D2R), im: Math.sin(240 * D2R) }; // -0.5 - j0.866
+
+/* 对称分量计算：输入为三相复数相量 [Ia, Ib, Ic]，返回 {pos, neg, zero} */
+function computeSymComponents(phasors){
+  const Ia = phasors[0], Ib = phasors[1], Ic = phasors[2];
+  /* I1 = (Ia + a·Ib + a²·Ic) / 3 */
+  const pos = cDivReal(cAdd(cAdd(Ia, cMul(OP_A, Ib)), cMul(OP_A2, Ic)), 3);
+  /* I2 = (Ia + a²·Ib + a·Ic) / 3 */
+  const neg = cDivReal(cAdd(cAdd(Ia, cMul(OP_A2, Ib)), cMul(OP_A, Ic)), 3);
+  /* I0 = (Ia + Ib + Ic) / 3 */
+  const zero = cDivReal(cAdd(cAdd(Ia, Ib), Ic), 3);
+  return {
+    pos: cToPolar(pos),
+    neg: cToPolar(neg),
+    zero: cToPolar(zero)
+  };
+}
+
+/* ---------------- 额定与平衡 ---------------- */
+const ratedPrimaryCurrent = (S_MVA, U_kV) => S_MVA * 1e6 / (Math.sqrt(3) * U_kV * 1e3);
+const ratedSecondaryCurrent = (S_MVA, U_kV, nCT) => ratedPrimaryCurrent(S_MVA, U_kV) / nCT;
+
+/* Y-Δ 变换：仅对星形侧生效（高压侧转角方式） */
+function ydConvert(phases, isStar){
+  if(!isStar) return phases.map(p => ({ re: p.re, im: p.im }));
+  const k = 1 / Math.sqrt(3);
+  return [0,1,2].map(i => cScale(cSub(phases[i], phases[(i+1) % 3]), k));
+}
+
+/* 转角变换：method='hv'（默认，高压侧转角）沿用 ydConvert 星侧 Y→Δ；
+ *             method='lv'（低压侧转角，RCS-978 方式）星侧减零序 + Δ侧 Δ→Y */
+function applyPhaseShift(phases, isStar, method){
+  if(method === 'lv'){
+    if(!isStar){ /* Δ 侧（LV）：Δ→Y：I'ᵢ = (Iᵢ − Iᵢ₋₁)/√3 */
+      const k = 1 / Math.sqrt(3);
+      return [0,1,2].map(i => cScale(cSub(phases[i], phases[(i+2) % 3]), k));
+    }
+    /* 星侧：I'ᵢ = Iᵢ − I₀（去掉零序） */
+    const i0 = cScale(cAdd(cAdd(phases[0], phases[1]), phases[2]), 1 / 3);
+    return [0,1,2].map(i => cSub(phases[i], i0));
+  }
+  return ydConvert(phases, isStar);
+}
+
+/* ============================================================
+ * 判据函数（V2.1 新增）：按转角方式选择厂家比率制动判据。
+ * 全部在 Ie 标幺域计算（idPu = Id/Ie, irPu = Ir/Ie），返回门槛再乘回 Ie。
+ * ------------------------------------------------------------
+ * PST1200U（高压侧转角）三折线 —— 依据《PST-1200U变压器保护装置
+ * 说明书》图 3.2.1.2：拐点 Is1=0.8Ie、Is2=3Ie，斜率 k1=0.5、k2=0.7
+ * （装置固定值，无需整定）；Iop.min 为差动最小动作电流（0.05~5 Ie）。
+ *   Ir < 0.8Ie          : Id ≥ Iop.min
+ *   0.8Ie ≤ Ir < 3Ie    : Id ≥ Iop.min + 0.5·(Ir − 0.8Ie)
+ *   Ir ≥ 3Ie            : Id ≥ Iop.min + 0.5·(3Ie−0.8Ie) + 0.7·(Ir − 3Ie)
+ * ------------------------------------------------------------
+ * PCS978（低压侧转角）—— 依据《PCS-978T2-G 说明书》公式 3.4-1/3.4-2：
+ * 低值比率差动（公式 3.4-1，Kbl=0.5 装置固定）：
+ *   Ir ≤ 0.5Ie          : Id > Icdqd + 0.2·Ir
+ *   0.5Ie < Ir ≤ 6Ie    : Id > Icdqd + 0.5·(Ir − 0.5Ie) + 0.1Ie
+ *   Ir > 6Ie            : Id > Icdqd + 0.5·5.5Ie + 0.75·(Ir − 6Ie) + 0.1Ie
+ * 高值比率差动（公式 3.4-2）：
+ *   Ir > 0.8Ie          : Id > 1.2Ie + 0.6·(Ir − 0.8Ie)
+ * 动作门槛取低值与高值之较小者（任一满足即动作）。
+ * ============================================================ */
+function pst1200uSetId(irPu, iopPu){
+  const Is1 = 0.8, Is2 = 3.0, k1 = 0.5, k2 = 0.7;
+  if(irPu < Is1) return iopPu;
+  if(irPu < Is2) return iopPu + k1 * (irPu - Is1);
+  return iopPu + k1 * (Is2 - Is1) + k2 * (irPu - Is2);
+}
+function pcs978SetIdLow(irPu, iopPu){
+  const Kbl = 0.5;
+  if(irPu <= 0.5) return iopPu + 0.2 * irPu;
+  if(irPu <= 6.0) return iopPu + Kbl * (irPu - 0.5) + 0.1;
+  return iopPu + Kbl * 5.5 + 0.75 * (irPu - 6.0) + 0.1;
+}
+function pcs978SetIdHigh(irPu){
+  if(irPu <= 0.8) return Infinity;
+  return 1.2 + 0.6 * (irPu - 0.8);
+}
+function ratioSetId(irPu, iopPu, method){
+  if(method === 'lv') return Math.min(pcs978SetIdLow(irPu, iopPu), pcs978SetIdHigh(irPu));
+  return pst1200uSetId(irPu, iopPu);
+}
+
+/* 动作特性曲线数据（V2.1）：按转角方式生成 Id-Ir 判据折线（标幺域）。
+ * method='hv' → PST1200U 三折线 [{ir,id}…]（起点、两拐点、右端）；
+ * method='lv' → PCS978 { low:[{ir,id}…], high:[{ir,id}…] }（低值三段 + 高值一段）。
+ * 右端取 8Ie：覆盖两判据全部分段（PCS978 第三段自 6Ie 起，8Ie 处已充分展示斜率）。 */
+const CURVE_MAX_IR = 8;
+function buildIrCurveData(method, iopPu){
+  if(method === 'lv'){
+    const low = [
+      { ir: 0,    id: iopPu },
+      { ir: 0.5,  id: pcs978SetIdLow(0.5, iopPu) },
+      { ir: 6.0,  id: pcs978SetIdLow(6.0, iopPu) },
+      { ir: CURVE_MAX_IR, id: pcs978SetIdLow(CURVE_MAX_IR, iopPu) },
+    ];
+    const high = [
+      { ir: 0.8, id: 1.2 },   // 高值段起始常数 1.2Ie（装置固定）
+      { ir: CURVE_MAX_IR, id: pcs978SetIdHigh(CURVE_MAX_IR) },
+    ];
+    return { low, high };
+  }
+  return [
+    { ir: 0,  id: pst1200uSetId(0, iopPu) },
+    { ir: 0.8, id: pst1200uSetId(0.8, iopPu) },
+    { ir: 3.0, id: pst1200uSetId(3.0, iopPu) },
+    { ir: CURVE_MAX_IR, id: pst1200uSetId(CURVE_MAX_IR, iopPu) },
+  ];
+}
+/* 点 (idPu, irPu) 是否位于动作区（判据门槛上方）：与 computeDifferential 的
+ * trip 判定一致（hv 用 ≥，lv 用 >，即 ratioSetId 的门槛比较）。 */
+function inActionRegion(method, iopPu, irPu, idPu){
+  const eps = 1e-9;   // 浮点容差：折线拐点处的精确边界（如 PST1200U 拐点2 Id=1.4）
+  if(method === 'lv') return idPu > ratioSetId(irPu, iopPu, 'lv') + eps;
+  return idPu >= ratioSetId(irPu, iopPu, 'hv') - eps;
+}
+
+/* 差动电流 + 比率制动 + 差动速断：sides = [{name, phasors:[{re,im}×3]}]
+ * iopPu: 差动启动电流（Iop.min / Icdqd，Ie 倍数）；method: 'hv'|'lv'；
+ * ie: 基准侧二次额定电流（Ie）；icdsdPu: 差动速断电流（Ie 倍数，>0 时启用）。
+ * 返回 { id, ir, setId, trip }。速断判据 Id ≥ Icdsd（依据 PST-1200U/PCS-978
+ * 说明书），不经谐波/CT断线闭锁，优先于比率差动：任一满足即动作。 */
+function computeDifferential(sides, iopPu, method, ie, icdsdPu){
+  const sum = [cFromPolar(0,0), cFromPolar(0,0), cFromPolar(0,0)];
+  const ird = [0, 0, 0];
+  sides.forEach(s => s.phasors.forEach((p, i) => {
+    sum[i] = cAdd(sum[i], p);
+    ird[i] += Math.hypot(p.re, p.im);
+  }));
+  const id = sum.map(cToPolar);
+  const ir = ird.map(v => v / 2);
+  const setId = [0, 0, 0];
+  const eps = 1e-9;   // 浮点容差（与 inActionRegion 一致）
+  for(let i = 0; i < 3; i++){
+    const irPu = ie > 0 ? ir[i] / ie : 0;
+    setId[i] = ratioSetId(irPu, iopPu, method) * ie;
+  }
+  const trip = id.map((d, i) => {
+    const idPu = ie > 0 ? d.mag / ie : 0;
+    if(icdsdPu > 0 && idPu >= icdsdPu - eps) return true;      // 差动速断动作（含边界，优先于比率差动）
+    if(method === 'lv') return d.mag > setId[i] + eps * ie;    // PCS-978 比率：严格大于（临界不动作）
+    return d.mag >= setId[i] - eps * ie;                       // PST1200U 比率：含边界动作
+  });
+  return { id, ir, setId, trip };
+}
+
+/* 单侧功率：Isec 为物理域（超前为正）二次电流相量；voltDeg 为电压相角 */
+function computePowerSide(S_MVA, U_kV, nCT, Isec, voltDeg){
+  const Vph = U_kV * 1e3 / Math.sqrt(3);
+  let P = 0, Q = 0;
+  for(let k = 0; k < 3; k++){
+    const I1 = Isec[k].mag * nCT;                       // 一次电流
+    const d = normDeg(voltDeg[k] - Isec[k].deg);        // S = V·I* → 相角 θv−θi
+    P += Vph * I1 * Math.cos(d * D2R);
+    Q += Vph * I1 * Math.sin(d * D2R);
+  }
+  const pMW = P / 1e6, qMvar = Q / 1e6;
+  const dir = Math.abs(pMW) < 1e-6 ? '≈0' : (pMW > 0 ? '流入' : '流出');
+  return { pMW, qMvar, dir };
+}
+
+/* ---------------- 主计算（纯函数） ---------------- */
+/*
+ * data = {
+ *   S, iop, icdsd, conv:'lead'|'lag', winding:'two'|'three', transformMethod:'hv'|'lv',
+ *   hv:{unit:'A'|'mA', U, nCT, ph:[{mag,deg}×3]}, mv:{...}, lv:{...}
+ * }
+ * ph.mag 始终以安培存储；ph.deg 按当前约定（conv）显示。
+ * iop: 差动启动电流（Iop.min / Icdqd），Ie 倍数，如 0.3 表示 0.3Ie。
+ * icdsd: 差动速断电流（Ie 倍数，缺省 6，如 6 表示 6Ie）。
+ */
+function computeAll(data){
+  const { S, iop, icdsd, conv, winding, transformMethod } = data;
+  const sides = ['hv', 'mv', 'lv'].filter(s => s !== 'mv' || winding === 'three');
+  const rated = {}, kbal = {}, raw = {}, balanced = {}, yd = {}, power = {}, symComp = {};
+
+  sides.forEach(s => rated[s] = { ie: ratedSecondaryCurrent(S, data[s].U, data[s].nCT) });
+
+  kbal.hv = 1;
+  if(sides.includes('mv')) kbal.mv = rated.hv.ie / rated.mv.ie;
+  if(sides.includes('lv')) kbal.lv = rated.hv.ie / rated.lv.ie;
+
+  sides.forEach(s => {
+    /* 物理相量：lead 直接取输入角；lag 取负 */
+    const ph = data[s].ph.map(p => ({ mag: p.mag, deg: conv === 'lead' ? normDeg(p.deg) : normDeg(-p.deg) }));
+    raw[s] = ph.map(p => cFromPolar(p.mag, p.deg));
+    balanced[s] = ph.map(p => cToPolar(cScale(cFromPolar(p.mag, p.deg), kbal[s])));
+    /* 转角变换：按所选方式（高压侧转角 Y→Δ 或低压侧转角 Δ→Y） */
+    yd[s] = applyPhaseShift(balanced[s].map(p => cFromPolar(p.mag, p.deg)), s !== 'lv', data.transformMethod).map(cToPolar);
+    const voltDeg = s === 'lv' ? [30, -90, 150] : [0, -120, 120];
+    power[s] = computePowerSide(S, data[s].U, data[s].nCT, ph, voltDeg);
+
+    /* 对称分量：基于原始二次电流 raw[s]（单位 A） */
+    symComp[s] = computeSymComponents(raw[s]);
+  });
+
+  const diff = computeDifferential(
+    sides.map(s => ({ name: s, phasors: yd[s].map(p => cFromPolar(p.mag, p.deg)) })), iop, transformMethod, rated.hv.ie,
+    typeof icdsd === 'number' ? icdsd : 6);   /* icdsd 缺省 6Ie（旧数据兜底） */
+
+  return {
+    type: winding,
+    unit: sides.reduce((o, s) => { o[s] = data[s].unit; return o; }, {}),
+    iop, icdsd: typeof icdsd === 'number' ? icdsd : 6, transformMethod, rated, kbal, raw, balanced, yd, diff, power, symComp,
+  };
+}
+
+/* ---------------- 状态与 DOM 同步 ---------------- */
+let lastResult = null;
+
+/* 默认数据：预设 A（两绕组 Yd11，超前角为正，各侧单位 A；iop=0.3 表示差动启动电流 0.3Ie；
+ * icdsd=6 表示差动速断电流 6Ie（缺省值，依据 PST-1200U/PCS-978 说明书 4~10Ie）） */
+const DEFAULT = {
+  S: 100, iop: 0.3, icdsd: 6, conv: 'lead', winding: 'two', transformMethod: 'hv',
+  hv: { unit:'A', U: 110, nCT: 120, ph: [{mag:4.370,deg:0},{mag:4.375,deg:240},{mag:4.372,deg:120}] },
+  mv: { unit:'A', U: 35,  nCT: 200, ph: [{mag:3.299,deg:0},{mag:3.299,deg:240},{mag:3.299,deg:120}] },
+  lv: { unit:'A', U: 10.5, nCT: 600, ph: [{mag:9.160,deg:210},{mag:9.165,deg:90},{mag:9.162,deg:330}] },
+};
+const PRESET_B = {
+  S: 100, iop: 0.3, icdsd: 6, conv: 'lead', winding: 'three', transformMethod: 'hv',
+  hv: { unit:'A', U: 110, nCT: 120, ph: [{mag:4.370,deg:0},{mag:4.375,deg:240},{mag:4.372,deg:120}] },
+  mv: { unit:'A', U: 35,  nCT: 200, ph: [{mag:3.299,deg:180},{mag:3.299,deg:60},{mag:3.299,deg:300}] },
+  lv: { unit:'A', U: 10.5, nCT: 600, ph: [{mag:5.490,deg:210},{mag:5.490,deg:90},{mag:5.490,deg:330}] },
+};
+let data = JSON.parse(JSON.stringify(DEFAULT));
+
+const SIDE_IDS = {
+  hv: { U:'inHV_U', CT:'inHV_CT', I:['inHV_Ia','inHV_Ib','inHV_Ic'], A:['inHV_Aa','inHV_Ab','inHV_Ac'] },
+  mv: { U:'inMV_U', CT:'inMV_CT', I:['inMV_Ia','inMV_Ib','inMV_Ic'], A:['inMV_Aa','inMV_Ab','inMV_Ac'] },
+  lv: { U:'inLV_U', CT:'inLV_CT', I:['inLV_Ia','inLV_Ib','inLV_Ic'], A:['inLV_Aa','inLV_Ab','inLV_Ac'] },
+};
+const SIDE_NAME = { hv:'高压侧', mv:'中压侧', lv:'低压侧' };
+const SIDE_TAG  = { hv:'H', mv:'M', lv:'L' };
+const UNIT_IDS = { hv:{A:'hvUnitA',mA:'hvUnitmA'}, mv:{A:'mvUnitA',mA:'mvUnitmA'}, lv:{A:'lvUnitA',mA:'lvUnitmA'} };
+const UNIT_NAME = { hv:'hvUnit', mv:'mvUnit', lv:'lvUnit' };
+
+/* 变比解析：支持 "600/5"、"600:5"、"120"、"600 / 5" 等写法，返回数值变比（一次/二次） */
+function parseRatio(str){
+  if(str == null) return NaN;
+  const s = String(str).trim();
+  if(!s) return NaN;
+  const m = s.match(/^([+-]?\d+(?:\.\d+)?)\s*[/:]\s*([+-]?\d+(?:\.\d+)?)$/);
+  if(m){
+    const a = parseFloat(m[1]), b = parseFloat(m[2]);
+    if(b === 0) return NaN;
+    return a / b;
+  }
+  return parseFloat(s);
+}
+
+/* DOM → data（幅值按各侧单位换算为 A） */
+function readInputs(){
+  const d = JSON.parse(JSON.stringify(data));   // 保留结构/约定
+  d.S = parseFloat($('inS').value) || 0;
+  d.iop = parseFloat($('inIop').value) || 0;
+  d.icdsd = parseFloat($('inIcdsd').value) || 0;
+  d.winding = document.querySelector('input[name=winding]:checked').value;
+  d.transformMethod = document.querySelector('input[name=transformMethod]:checked').value;
+  for(const s of ['hv','mv','lv']){
+    const ids = SIDE_IDS[s];
+    d[s].unit = document.querySelector(`input[name=${UNIT_NAME[s]}]:checked`).value;
+    const f = d[s].unit === 'mA' ? 1000 : 1;   // 显示 mA → 存储 A
+    d[s].U = parseFloat($(ids.U).value) || 0;
+    const rt = parseRatio($(ids.CT).value);
+    d[s].nCT = isNaN(rt) ? NaN : rt;
+    for(let i = 0; i < 3; i++){
+      const m = parseFloat($(ids.I[i]).value);
+      const a = parseFloat($(ids.A[i]).value);
+      d[s].ph[i].mag = isNaN(m) ? 0 : m / f;
+      d[s].ph[i].deg = isNaN(a) ? 0 : a;
+    }
+  }
+  return d;
+}
+
+/* 转角方式相关 UI 文案（随所选方式同步） */
+const LEGEND_TXT = {
+  hv: { hv: '高压侧（星形 Y，Y→Δ 变换）', mv: '中压侧（星形 Y，Y→Δ 变换）', lv: '低压侧（三角形 D，不变换）' },
+  lv: { hv: '高压侧（星形 Y，减零序）',   mv: '中压侧（星形 Y，减零序）',   lv: '低压侧（三角形 D，Δ→Y 变换）' },
+};
+const TM_HINT = {
+  hv: '转角：星形侧（高/中压）Y→Δ 变换 I′ᵢ = (Iᵢ − Iᵢ₊₁)/√3，三角形侧（低压）不变。判据：PST1200U 三折线（拐点 0.8Ie/3Ie，斜率 0.5/0.7 装置固定）。',
+  lv: '转角：星形侧（高/中压）减零序 I′ᵢ = Iᵢ − I₀（I₀ 为三相平均值），三角形侧（低压）Δ→Y 变换 I′ᵢ = (Iᵢ − Iᵢ₋₁)/√3。判据：PCS978 稳态比率差动（低值 Kbl=0.5 + 高值）。',
+};
+const FIG2_CAPTION = {
+  hv: '图 2　幅值平衡与相位校正后（高压侧转角 Y→Δ，差动域，单位 A）',
+  lv: '图 2　幅值平衡与相位校正后（低压侧转角 减零序 / Δ→Y，差动域，单位 A）',
+};
+const IOP_LABEL = {
+  hv: '差动最小动作电流 Iop.min (Ie)',
+  lv: '差动启动电流 Icdqd (Ie)',
+};
+const FIG3_CAPTION = {
+  hv: '图 3　差动动作特性曲线（PST1200U 三折线，Id–Ir）',
+  lv: '图 3　差动动作特性曲线（PCS978 低值+高值，Id–Ir）',
+};
+function applyTransformMethodUI(method){
+  const m = method === 'lv' ? 'lv' : 'hv';
+  $('lgHV').textContent = LEGEND_TXT[m].hv;
+  $('lgMV').textContent = LEGEND_TXT[m].mv;
+  $('lgLV').textContent = LEGEND_TXT[m].lv;
+  $('tmHint').textContent = TM_HINT[m];
+  $('fig2Caption').textContent = FIG2_CAPTION[m];
+  const fig3c = $('fig3Caption');
+  if(fig3c) fig3c.textContent = FIG3_CAPTION[m];
+  /* 输入框标签随转角方式切换：Iop.min（PST1200U）↔ Icdqd（PCS978） */
+  $('lblIop').textContent = IOP_LABEL[m];
+}
+
+/* data → DOM 输入框 */
+function renderInputs(){
+  $('inS').value = data.S;
+  $('inIop').value = data.iop;
+  $('inIcdsd').value = data.icdsd;
+  $('wTwo').checked = data.winding === 'two';
+  $('wThree').checked = data.winding === 'three';
+  document.body.classList.toggle('two', data.winding === 'two');
+  $('tmHv').checked = data.transformMethod !== 'lv';
+  $('tmLv').checked = data.transformMethod === 'lv';
+  applyTransformMethodUI(data.transformMethod);
+  for(const s of ['hv','mv','lv']){
+    const ids = SIDE_IDS[s];
+    const f = data[s].unit === 'mA' ? 1000 : 1;
+    $(UNIT_IDS[s][data[s].unit]).checked = true;
+    $('unitLbl_' + s).textContent = data[s].unit;
+    $(ids.U).value = data[s].U;
+    $(ids.CT).value = data[s].nCT;
+    for(let i = 0; i < 3; i++){
+      $(ids.I[i]).value = +(data[s].ph[i].mag * f).toFixed(4);
+      $(ids.A[i]).value = +data[s].ph[i].deg.toFixed(2);
+    }
+  }
+  $('convLabel').innerHTML = data.conv === 'lead'
+    ? '角度约定：<b>超前角为正</b>（电流超前电压为正，高压侧 A 相电压为 0° 基准）'
+    : '角度约定：<b>滞后角为正</b>（电流滞后电压为正，高压侧 A 相电压为 0° 基准）';
+  $('convBtn').textContent = data.conv === 'lead' ? '切换为：滞后角为正' : '切换为：超前角为正';
+}
+
+/* ---------------- 校验 ---------------- */
+function validate(d){
+  const sides = ['hv','mv','lv'].filter(s => s !== 'mv' || d.winding === 'three');
+  if(!(d.S > 0)) return '额定容量 S 必须大于 0。';
+  if(!(d.iop > 0)) return '差动启动电流（Iop.min / Icdqd）必须大于 0。';
+  if(!(d.icdsd > 0)) return '差动速断电流 Icdsd 必须大于 0。';
+  for(const s of sides){
+    if(!(d[s].U > 0)) return `${SIDE_NAME[s]} 额定电压 U 必须大于 0。`;
+    if(isNaN(d[s].nCT)) return `${SIDE_NAME[s]} CT 变比格式无效（支持 600/5、600:5 或纯数字）。`;
+    if(!(d[s].nCT > 0)) return `${SIDE_NAME[s]} CT 变比必须大于 0（不能为 0）。`;
+    for(let i = 0; i < 3; i++){
+      if(d[s].ph[i].mag < 0) return `${SIDE_NAME[s]} ${'ABC'[i]} 相电流幅值不能为负。`;
+      if(!isFinite(d[s].ph[i].deg)) return `${SIDE_NAME[s]} ${'ABC'[i]} 相角无效。`;
+    }
+  }
+  return null;
+}
+
+function showAlert(msg){ const el = $('alertBox'); el.textContent = msg; el.classList.add('show'); }
+function hideAlert(){ $('alertBox').classList.remove('show'); }
+
+/* ---------------- 结果渲染 ---------------- */
+function renderResults(r){
+  const sides = ['hv','mv','lv'].filter(s => r.power[s]);
+  
+  /* 对称分量表 */
+  const tbSym = $('tblSymComp').querySelector('tbody');
+  tbSym.innerHTML = '';
+  for(const s of sides){
+    const sc = r.symComp[s];
+    const tr = document.createElement('tr');
+    tr.innerHTML =
+      `<td>${SIDE_NAME[s]}</td>` +
+      `<td class="seq-pos">${sc.pos.mag.toFixed(4)}</td><td class="seq-pos">${sc.pos.deg.toFixed(2)}</td>` +
+      `<td class="seq-neg">${sc.neg.mag.toFixed(4)}</td><td class="seq-neg">${sc.neg.deg.toFixed(2)}</td>` +
+      `<td class="seq-zero">${sc.zero.mag.toFixed(4)}</td><td class="seq-zero">${sc.zero.deg.toFixed(2)}</td>`;
+    tbSym.appendChild(tr);
+  }
+
+  /* 功率表 */
+  const tb1 = $('tblPower').querySelector('tbody');
+  tb1.innerHTML = '';
+  for(const s of sides){
+    const tr = document.createElement('tr');
+    const p = r.power[s], rt = r.rated[s];
+    const dirCls = p.dir === '流入' ? 'dir-in' : (p.dir === '流出' ? 'dir-out' : '');
+    tr.innerHTML =
+      `<td>${SIDE_NAME[s]}</td><td>${data[s].U}</td><td>${data[s].nCT}</td>` +
+      `<td>${rt.ie.toFixed(4)}</td><td>${r.kbal[s].toFixed(4)}</td>` +
+      `<td>${p.pMW >= 0 ? '+' : ''}${p.pMW.toFixed(3)}</td>` +
+      `<td>${p.qMvar >= 0 ? '+' : ''}${p.qMvar.toFixed(3)}</td>` +
+      `<td class="${dirCls}">${p.dir}</td>`;
+    tb1.appendChild(tr);
+  }
+  
+  /* 差动电流表（比率制动 Id.set + 差动速断 Icdsd，任一满足即动作） */
+  const tb2 = $('tblDiff').querySelector('tbody');
+  tb2.innerHTML = '';
+  const ie = r.rated.hv.ie;
+  const fmtIe = v => (ie > 0 ? v / ie : v).toFixed(4);
+  for(let i = 0; i < 3; i++){
+    const tr = document.createElement('tr');
+    const t = r.diff.trip[i];
+    tr.innerHTML =
+      `<td>${'ABC'[i]}</td>` +
+      `<td>${fmtIe(r.diff.id[i].mag)}</td>` +
+      `<td>${fmtIe(r.diff.ir[i])}</td>` +
+      `<td>${fmtIe(r.diff.setId[i])}</td>` +
+      `<td>${fmtIe(r.icdsd * ie)}</td>` +
+      `<td><span class="badge ${t ? 'bad' : 'ok'}">${t ? '动作' : '不动作'}</span></td>`;
+    tb2.appendChild(tr);
+  }
+}
+
+/* ---------------- 相量图画布 ---------------- */
+const COLORS = { A:'#FFE600', B:'#00A650', C:'#FF0000' };
+const SIDE_STYLE = {
+  hv: { dash:[], w:2.5 },
+  mv: { dash:[8,5], w:2.5 },
+  lv: { dash:[2,5], w:2.5 },
+  diff: { dash:[10,5,3,5], w:3 },
+};
+
+function niceCeil(v){
+  if(v <= 0) return 1;
+  const p = Math.pow(10, Math.floor(Math.log10(v)));
+  const m = v / p;
+  return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 5 ? 5 : 10) * p;
+}
+
+function drawPolar(canvas, vecs, unitLabel){
+  const dpr = window.devicePixelRatio || 1;
+  /* 显示尺寸完全由 CSS 控制（figure canvas {width:100%; aspect-ratio:460/340; max-width:620px}），
+     这里读取实际布局尺寸，按 DPR 设置内部像素分辨率，避免画布过大/变形。 */
+  const cssW = canvas.clientWidth || 460;
+  const cssH = canvas.clientHeight || Math.round(cssW * 340 / 460);
+  canvas.width = Math.max(1, Math.round(cssW * dpr));
+  canvas.height = Math.max(1, Math.round(cssH * dpr));
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, cssW, cssH);
+
+  const cx = cssW * 0.46, cy = cssH * 0.52, R = Math.min(cssW, cssH) * 0.38;
+  let maxMag = 0;
+  vecs.forEach(v => { if(v.mag > maxMag) maxMag = v.mag; });
+  const scale = maxMag > 0 ? Math.ceil(maxMag * 1.1 / 0.25) * 0.25 : 1;  /* 满量程: 0.25 步长向上取整, 最长向量占半径 80%~90%; 不用 1/2/5 跳档(标幺图最长≈1 会取整到 2, 向量仅占一半) */
+  const k = R / scale;
+
+  /* 网格：同心圆 + 十字轴 + 30° 刻度（数学约定：0° 水平向右，逆时针为正） */
+  ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1;
+  [0.25, 0.5, 0.75, 1].forEach(f => {
+    ctx.beginPath(); ctx.arc(cx, cy, R * f, 0, Math.PI * 2); ctx.stroke();
+    const v = scale * f;
+    const lbl = v.toFixed(v < 10 ? (Number.isInteger(v) ? 1 : 2) : 0);
+    ctx.fillStyle = '#94a3b8'; ctx.font = '10px sans-serif';
+    ctx.fillText(lbl, cx + R * f + 3, cy + 4);
+  });
+  ctx.strokeStyle = '#cbd5e1';
+  ctx.beginPath(); ctx.moveTo(cx - R, cy); ctx.lineTo(cx + R, cy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx, cy - R); ctx.lineTo(cx, cy + R); ctx.stroke();
+  for(let a = 0; a < 360; a += 30){
+    const r0 = a * D2R;
+    const x1 = cx + Math.cos(r0) * R * 0.94, y1 = cy - Math.sin(r0) * R * 0.94;
+    const x2 = cx + Math.cos(r0) * R,      y2 = cy - Math.sin(r0) * R;
+    ctx.strokeStyle = '#e2e8f0'; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    if(a % 60 === 0){
+      ctx.fillStyle = '#94a3b8'; ctx.font = '10px sans-serif';
+      const lx = cx + Math.cos(r0) * (R + 13), ly = cy - Math.sin(r0) * (R + 13);
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(a === 0 ? '0°' : a + '°', lx, ly);
+    }
+  }
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = '#64748b'; ctx.font = '11px sans-serif';
+  ctx.fillText(unitLabel, 8, 16);
+
+  /* 原点 */
+  ctx.fillStyle = '#334155';
+  ctx.beginPath(); ctx.arc(cx, cy, 2.5, 0, Math.PI * 2); ctx.fill();
+
+  /* 相量箭头（数学约定：0° 水平向右，角度逆时针为正） */
+  vecs.forEach(v => {
+    if(v.mag <= 1e-9){ return; }
+    const a = v.deg * D2R;
+    const L = v.mag * k;
+    const x = cx + Math.cos(a) * L, y = cy - Math.sin(a) * L;   // canvas y 向下 → 取负实现逆时针为正
+    ctx.strokeStyle = v.color; ctx.lineWidth = v.w;
+    ctx.setLineDash(v.dash);
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(x, y); ctx.stroke();
+    ctx.setLineDash([]);
+    /* 箭头三角 */
+    const ah = 7, aw = 3.5;
+    const tip = Math.atan2(y - cy, x - cx);
+    ctx.fillStyle = v.color;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - ah * Math.cos(tip - aw * D2R) * 0.9, y - ah * Math.sin(tip - aw * D2R) * 0.9);
+    ctx.lineTo(x - ah * Math.cos(tip + aw * D2R) * 0.9, y - ah * Math.sin(tip + aw * D2R) * 0.9);
+    ctx.closePath(); ctx.fill();
+    /* 标签 */
+    ctx.fillStyle = v.color; ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    const lx = x + Math.cos(tip) * 12, ly = y + Math.sin(tip) * 12;
+    ctx.fillText(v.label, lx, ly);
+    ctx.textAlign = 'left';
+  });
+}
+
+/* ---------------- Id-Ir 动作特性曲线（图 3，V2.1） ----------------
+ * 数据组装：曲线拐点（标幺）+ 运行点（标幺, 由 diff 换算）。 */
+function buildFig3Data(r){
+  const ie = r.rated.hv.ie || 1;
+  const curve = buildIrCurveData(r.transformMethod, r.iop);
+  const points = r.diff.ir.map((irA, i) => ({
+    phase: {0:'A',1:'B',2:'C'}[i],
+    ir: irA / ie,
+    id: r.diff.id[i].mag / ie,
+    trip: r.diff.trip[i],
+  }));
+  return { curve, points, iop: r.iop, icdsd: r.icdsd || 6, method: r.transformMethod };
+}
+
+/* 绘制：X 轴 Ir、Y 轴 Id（缺省量程 0–8Ie，数据超限时两轴同步等比例放大）。
+ * hv → 单条三折线 + 上方阴影动作区；lv → 低值+高值两线 + min 上方阴影。
+ * 运行点：A/B/C 相按相色黄/绿/红绘制，实心圆 = 动作、空心圆 = 不动作。 */
+function drawIdIrCurve(canvas, fig3){
+  const dpr = window.devicePixelRatio || 1;
+  const cssW = canvas.clientWidth || 460;
+  const cssH = canvas.clientHeight || Math.round(cssW * 380 / 460);
+  canvas.width = Math.max(1, Math.round(cssW * dpr));
+  canvas.height = Math.max(1, Math.round(cssH * dpr));
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, cssW, cssH);
+
+  const { curve, points } = fig3;
+  const XMAX = CURVE_MAX_IR;   /* 判据定义域上限（8Ie），仅用于曲线数据与裁剪 */
+
+  /* 绘图区布局：左边距放 Y 轴刻度，下边距放 X 轴刻度 */
+  const ml = 44, mr = 16, mt = 12, mb = 34;
+  const pw = cssW - ml - mr, ph = cssH - mt - mb;
+
+  /* 量程：缺省横纵坐标范围 8Ie（覆盖两判据全部分段与速断整定线），
+   * 保留动态范围 —— 数据点（Ir/Id）超过缺省值时，横纵坐标按相同比例
+   * 自动放大（两轴范围始终相等，图形几何比例不变）。 */
+  let vMax = 0;
+  points.forEach(p => {
+    if(p.ir > vMax) vMax = p.ir;
+    if(p.id > vMax) vMax = p.id;
+  });
+  const xMax = Math.max(8, niceCeil(vMax * 1.1));
+  const yMax = xMax;   /* 横纵等比例：两轴范围相同，同步缩放 */
+
+  const X = x => ml + x / xMax * pw;
+  const Y = y => mt + ph - y / yMax * ph;
+
+  /* 网格 + 刻度（两轴步长一致，比例相同） */
+  ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1;
+  ctx.font = '10px sans-serif';
+  const gridStep = niceCeil(yMax / 4);
+  for(let ix = 0; ix <= xMax + 1e-9; ix += gridStep){
+    ctx.fillStyle = '#94a3b8'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText(ix + 'Ie', X(ix), Y(0) + 6);
+    ctx.beginPath(); ctx.moveTo(X(ix), Y(0)); ctx.lineTo(X(ix), Y(yMax)); ctx.stroke();
+  }
+  for(let iy = 0; iy <= yMax + 1e-9; iy += gridStep){
+    ctx.fillStyle = '#94a3b8'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.fillText(iy.toFixed(1) + 'Ie', X(0) - 6, Y(iy));
+    ctx.beginPath(); ctx.moveTo(X(0), Y(iy)); ctx.lineTo(X(xMax), Y(iy)); ctx.stroke();
+  }
+  /* 网格外框（完整矩形，曲线延伸至量程边缘时收边于边框内） */
+  ctx.strokeStyle = '#cbd5e1';
+  ctx.beginPath(); ctx.moveTo(X(0), Y(0)); ctx.lineTo(X(xMax), Y(0)); ctx.stroke();        /* 底 */
+  ctx.beginPath(); ctx.moveTo(X(xMax), Y(0)); ctx.lineTo(X(xMax), Y(yMax)); ctx.stroke();  /* 右 */
+  ctx.beginPath(); ctx.moveTo(X(xMax), Y(yMax)); ctx.lineTo(X(0), Y(yMax)); ctx.stroke();  /* 顶 */
+  ctx.beginPath(); ctx.moveTo(X(0), Y(yMax)); ctx.lineTo(X(0), Y(0)); ctx.stroke();        /* 左 */
+
+  /* 轴标题 */
+  ctx.fillStyle = '#334155'; ctx.font = 'bold 12px sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  ctx.fillText('制动电流 Ir', X(xMax / 2), cssH - 16);
+  ctx.save();
+  ctx.translate(12, mt + ph / 2); ctx.rotate(-Math.PI / 2);
+  ctx.fillText('差动电流 Id', 0, 0);
+  ctx.restore();
+
+  /* 动作区阴影：逐 x 采样 min(低值, 高值)（lv）或折线（hv），填充曲线上方 */
+  const step = xMax / (pw * 0.5);
+  const regionId = x => {
+    const setId = x <= 0 ? (curve[0] ? curve[0].id : 0) : ratioSetId(x, fig3.iop || 0, fig3.method || 'hv');
+    return setId;
+  };
+  ctx.beginPath();
+  ctx.moveTo(X(0), Y(regionId(0)));
+  for(let x = step; x <= xMax + 1e-9; x += step){
+    ctx.lineTo(X(x), Y(regionId(x)));
+  }
+  ctx.lineTo(X(xMax), Y(yMax));
+  ctx.lineTo(X(0), Y(yMax));
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(148, 163, 184, 0.18)';
+  ctx.fill();
+
+  /* 判据曲线（仅绘制量程内可见部分，canvas 自动裁剪超界线段） */
+  const inView = (x, y) => x <= xMax && y <= yMax;
+  /* 动态量程超过判据定义域(8Ie)时, 按判据公式外推延伸折线至量程边缘 */
+  const extendTo = (pts, idFn) => {
+    const last = pts[pts.length - 1];
+    if(xMax > last.ir + 1e-9) return pts.concat([{ ir: xMax, id: idFn(xMax) }]);
+    return pts;
+  };
+  const strokeCurve = (pts, color, dash) => {
+    /* 量程裁剪: 折线仅绘制于网格内 ——
+     * 1) 右侧裁剪: 判据数据定义域(8Ie)超过 xMax 的线段截断于右框(xMax),
+     *    防止 xMax < 8Ie 时折线越出网格右边界(如小/中制动电流场景);
+     * 2) 顶部裁剪: 高于 yMax 的线段截断于顶部框(yMax)。
+     * 判据曲线单调递增, 一旦超出即截断(线性插值求交点)。 */
+    const rightClip = ps => {
+      const out = [];
+      for(let i = 0; i < ps.length; i++){
+        const p = ps[i];
+        if(p.ir <= xMax + 1e-9){ out.push(p); }
+        else if(out.length > 0){
+          const q = out[out.length - 1];
+          if(q.ir < xMax - 1e-9){
+            const t = (xMax - q.ir) / (p.ir - q.ir);
+            out.push({ ir: xMax, id: q.id + t * (p.id - q.id) });
+          }
+          break;
+        } else break;
+      }
+      return out;
+    };
+    const topClip = ps => {
+      const out = [];
+      for(let i = 0; i < ps.length; i++){
+        const p = ps[i];
+        if(p.id <= yMax + 1e-9){ out.push(p); }
+        else if(out.length > 0){
+          const q = out[out.length - 1];
+          if(q.id < yMax - 1e-9){
+            const t = (yMax - q.id) / (p.id - q.id);
+            out.push({ ir: q.ir + t * (p.ir - q.ir), id: yMax });
+          }
+          break;
+        } else break;
+      }
+      return out;
+    };
+    const clipped = topClip(rightClip(pts));
+    ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.setLineDash(dash);
+    ctx.beginPath();
+    clipped.forEach((p, i) => i === 0 ? ctx.moveTo(X(p.ir), Y(p.id)) : ctx.lineTo(X(p.ir), Y(p.id)));
+    ctx.stroke();
+    ctx.setLineDash([]);
+  };
+  if(Array.isArray(curve)){
+    strokeCurve(extendTo(curve, x => ratioSetId(x, fig3.iop || 0, 'hv')), '#334155', []);
+    ctx.fillStyle = '#334155'; ctx.font = 'italic 10px sans-serif';
+    ctx.textAlign = 'left';
+    if(inView(1.6, 0.5)) ctx.fillText('K1=0.5', X(1.6), Y(0.5));
+    if(inView(4.2, 2.6)) ctx.fillText('K2=0.7', X(4.2), Y(2.6));
+  } else {
+    strokeCurve(extendTo(curve.low, x => pcs978SetIdLow(x, fig3.iop || 0)), '#334155', []);
+    strokeCurve(extendTo(curve.high, x => pcs978SetIdHigh(x)), '#64748b', [6, 4]);
+    ctx.fillStyle = '#334155'; ctx.font = 'italic 10px sans-serif'; ctx.textAlign = 'left';
+    if(inView(0.12, 0.45)) ctx.fillText('K=0.2', X(0.12), Y(0.45));
+    if(inView(2.6, 1.15)) ctx.fillText('K=0.5', X(2.6), Y(1.15));
+    if(inView(6.4, 3.4)) ctx.fillText('K=0.75', X(6.4), Y(3.4));
+    ctx.fillStyle = '#64748b';
+    if(inView(1.6, 1.75)) ctx.fillText('K=0.6（高值）', X(1.6), Y(1.75));
+    if(inView(0.55, 0.9)) ctx.fillText('低值', X(0.55), Y(0.9));
+    if(inView(7.0, 5.0)) ctx.fillText('高值', X(7.0), Y(5.0));
+  }
+
+  /* 拐点标注（仅显示在量程内的拐点） */
+  if(Array.isArray(curve)){
+    ctx.fillStyle = '#94a3b8'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
+    if(xMax >= 0.8) ctx.fillText('0.8Ie', X(0.8), Y(0) + 20);
+    if(xMax >= 3.0) ctx.fillText('3Ie', X(3.0), Y(0) + 20);
+  } else {
+    ctx.fillStyle = '#94a3b8'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
+    if(xMax >= 0.5) ctx.fillText('0.5Ie', X(0.5), Y(0) + 20);
+    if(xMax >= 0.8) ctx.fillText('0.8Ie', X(0.8), Y(0) + 20);
+    if(xMax >= 6.0) ctx.fillText('6Ie', X(6.0), Y(0) + 20);
+  }
+
+  /* 动作区文字 */
+  ctx.fillStyle = 'rgba(51, 65, 85, 0.55)'; ctx.font = 'bold 11px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('差动动作区', X(xMax * 0.68), Y(yMax * 0.85));
+
+  /* 差动速断线（V2.2）：Id = Icdsd 水平折线（红色虚线），位于判据曲线上方。
+   * 仅当速断整定值在量程内（icdsd ≤ yMax）时绘制 —— 量程外表示运行点 Id
+   * 不可能达到速断整定值（Id max ≤ yMax/1.1 < icdsd），速断不参与，不画。 */
+  if(fig3.icdsd > 0 && fig3.icdsd <= yMax){
+    ctx.strokeStyle = '#dc2626'; ctx.lineWidth = 2; ctx.setLineDash([8, 5]);
+    ctx.beginPath(); ctx.moveTo(X(0), Y(fig3.icdsd)); ctx.lineTo(X(xMax), Y(fig3.icdsd)); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#dc2626'; ctx.font = 'bold 10px sans-serif';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';   /* 名称置于线上方左端，不与折线重叠 */
+    ctx.fillText('Icdsd=' + fig3.icdsd + 'Ie', X(0) + 4, Y(fig3.icdsd) - 5);
+  }
+
+  /* 运行点（A/B/C，黄/绿/红按相别；实心=动作，空心=不动作）。
+   * 标签防重叠：按屏幕距离聚类（<24px 视为重合）。重合组标签错开方位
+   * （A 右上 / B 右下 / C 左下）；运行点贴近顶部/底部边框时（如平衡运行
+   * Id≈0 贴底），标签改为水平单行并排，避免纵向堆叠把标签推远。 */
+  const pts = points.map(p => ({ p, x: X(Math.min(p.ir, xMax)), y: Y(Math.min(p.id, yMax)) }));
+  const groups = [];
+  pts.forEach(pt => {
+    const g = groups.find(grp => grp.some(o => Math.hypot(o.x - pt.x, o.y - pt.y) < 24));
+    if(g) g.push(pt); else groups.push([pt]);
+  });
+  const PHASE_OFF = { A: [7, -4], B: [14, 14], C: [-14, 8] };
+  groups.forEach(grp => {
+    const cy = grp[0].y;
+    const nearEdge = grp.length > 1 && (cy > cssH - mb - 18 || cy < mt + 18);
+    const rowDir = grp[0].x + 7 + grp.length * 13 + 4 < cssW - mr - 2 ? 1 : -1;
+    const rowDy = cy > cssH - mb - 18 ? -6 : 16;
+    grp.forEach((pt, gi) => {
+      const c = COLORS[pt.p.phase] || '#334155';
+      ctx.beginPath(); ctx.arc(pt.x, pt.y, 5, 0, Math.PI * 2);
+      if(pt.p.trip){ ctx.fillStyle = c; ctx.fill(); }
+      else { ctx.strokeStyle = c; ctx.lineWidth = 2; ctx.stroke(); }
+      ctx.fillStyle = c; ctx.font = 'bold 10px sans-serif';
+      ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+      let dx, dy;
+      if(nearEdge){
+        dx = rowDir > 0 ? 7 + gi * 13 : -7 - gi * 13;
+        dy = rowDy;
+      } else {
+        dx = grp.length > 1 ? PHASE_OFF[pt.p.phase][0] : 7;
+        dy = grp.length > 1 ? PHASE_OFF[pt.p.phase][1] : -4;
+        if(grp.length > 1){
+          if(pt.x + dx < ml + 2) dx = 8 + gi * 14;
+          if(pt.x + dx > cssW - mr - 2) dx = -dx;
+          if(pt.y + dy < mt) dy = 4 + gi * 13;
+          if(pt.y + dy > cssH - mb) dy = -4 - gi * 13;
+        }
+      }
+      ctx.fillText(pt.p.phase, pt.x + dx, pt.y + dy);
+    });
+  });
+}
+
+function buildFig1Vecs(r){
+  const sides = ['hv','mv','lv'].filter(s => r.raw[s]);
+  const vecs = [];
+  for(const ph of ['A','B','C']){
+    const i = {A:0,B:1,C:2}[ph];
+    for(const s of sides){
+      const p = cToPolar(r.raw[s][i]);
+      /* 标幺化：向量长度 = 各侧电流 / 该侧二次额定电流 Ie，
+         消除各侧 CT 变比不同造成的幅值悬殊（平衡运行时各侧均≈1.0） */
+      const ie = r.rated[s].ie || 1;
+      vecs.push({ mag: p.mag / ie, deg: p.deg, color: COLORS[ph], dash: SIDE_STYLE[s].dash,
+        w: SIDE_STYLE[s].w, label: ph + '·' + SIDE_TAG[s] });
+    }
+  }
+  return vecs;
+}
+
+function buildFig2Vecs(r){
+  const sides = ['hv','mv','lv'].filter(s => r.yd[s]);
+  const vecs = [];
+  for(const ph of ['A','B','C']){
+    const i = {A:0,B:1,C:2}[ph];
+    for(const s of sides){
+      const p = r.yd[s][i];
+      vecs.push({ mag: p.mag, deg: p.deg, color: COLORS[ph], dash: SIDE_STYLE[s].dash,
+        w: SIDE_STYLE[s].w, label: ph + '·' + SIDE_TAG[s] });
+    }
+    vecs.push({ mag: r.diff.id[i].mag, deg: r.diff.id[i].deg, color: '#000',
+      dash: SIDE_STYLE.diff.dash, w: SIDE_STYLE.diff.w, label: 'Id·' + ph });
+  }
+  return vecs;
+}
+
+/* 图例按绕组模式动态生成：双绕组时不显示中压侧线型 */
+function legendHTML(type){
+  return '<span><i class="swatch cA"></i>A 相</span><span><i class="swatch cB"></i>B 相</span><span><i class="swatch cC"></i>C 相</span>' +
+    '<span><i class="swatch sHV"></i>H 高压侧实线</span>' +
+    (type === 'three' ? '<span><i class="swatch sMV"></i>M 中压侧虚线</span>' : '') +
+    '<span><i class="swatch sLV"></i>L 低压侧点线</span>';
+}
+const FIG2_LEGEND_EXTRA = '<span><i class="swatch sDiff"></i>Id 差动电流（点划线）</span>';
+
+function drawDiagrams(r){
+  drawPolar($('canvas1'), buildFig1Vecs(r), '单位: Ie（以各侧额定电流为基准）');
+  drawPolar($('canvas2'), buildFig2Vecs(r), '单位: A（二次）');
+  drawIdIrCurve($('canvas3'), buildFig3Data(r));   // V2.1 图 3
+  const lg = legendHTML(r.type);
+  $('fig1Legend').innerHTML = lg;
+  $('fig2Legend').innerHTML = lg + FIG2_LEGEND_EXTRA;
+  const f3l = $('fig3Legend');
+  if(f3l) f3l.innerHTML = '<span><i class="swatch sHV"></i>判据</span>' +
+    (r.transformMethod === 'lv' ? '<span><i class="swatch sMV"></i>高值</span>' : '') +
+    '<span><i class="swatch sIcdsd"></i>Icdsd 速断</span>' +
+    '<span><i class="swatch dot dotA"></i>A 相</span>' +
+    '<span><i class="swatch dot dotB"></i>B 相</span>' +
+    '<span><i class="swatch dot dotC"></i>C 相</span>' +
+    '<span><i class="swatch dot"></i>动作</span>' +
+    '<span><i class="swatch dot dotHollow"></i>不动作</span>';
+}
+
+/* ---------------- 更新流程 ---------------- */
+let pending = false;
+let dirty = false;   // 输入已修改但尚未计算
+function syncView(d){
+  document.body.classList.toggle('two', d.winding === 'two');
+  /* 按绕组类型显示对应预设按钮 */
+  $('presetA').style.display = d.winding === 'two' ? '' : 'none';
+  $('presetB').style.display = d.winding === 'three' ? '' : 'none';
+  for(const s of ['hv','mv','lv']){
+    if(d[s] && d[s].unit) $('unitLbl_' + s).textContent = d[s].unit;
+  }
+}
+function markDirty(){
+  dirty = true;
+  const b = $('calcBtn');
+  b.textContent = '计算（数据已修改）';
+  b.classList.add('dirty');
+}
+function update(){
+  if(pending) return;
+  pending = true;
+  requestAnimationFrame(() => {
+    pending = false;
+    const d = readInputs();
+    const err = validate(d);
+    if(err){ showAlert(err); markDirty(); return; }
+    hideAlert();
+    data = d;
+    syncView(d);
+    lastResult = computeAll(d);
+    renderResults(lastResult);
+    drawDiagrams(lastResult);
+    dirty = false;
+    const b = $('calcBtn');
+    b.textContent = '计算';
+    b.classList.remove('dirty');
+  });
+}
+
+/* ---------------- 交互绑定 ---------------- */
+/* 输入变化：仅标记"已修改"，不实时计算（点击「计算」才计算） */
+const NUM_IDS = ['inS','inIop','inIcdsd','inHV_U','inHV_CT','inHV_Ia','inHV_Aa','inHV_Ib','inHV_Ab','inHV_Ic','inHV_Ac',
+  'inMV_U','inMV_CT','inMV_Ia','inMV_Aa','inMV_Ib','inMV_Ab','inMV_Ic','inMV_Ac',
+  'inLV_U','inLV_CT','inLV_Ia','inLV_Aa','inLV_Ib','inLV_Ab','inLV_Ic','inLV_Ac'];
+NUM_IDS.forEach(id => $(id).addEventListener('input', () => {
+  syncView(readInputs());
+  markDirty();
+}));
+document.querySelectorAll('input[name=winding]').forEach(el => el.addEventListener('change', () => {
+  syncView(readInputs());
+  markDirty();
+}));
+document.querySelectorAll('input[name=transformMethod]').forEach(el => el.addEventListener('change', () => {
+  const d = readInputs();
+  syncView(d);
+  applyTransformMethodUI(d.transformMethod);
+  /* 已计算过则切换方式后立即重算重绘（相量图随转角方式实时更新） */
+  if(lastResult){ update(); } else { markDirty(); }
+}));
+/* 每侧单位切换：将本侧输入框幅值在 A ↔ mA 之间换算（存储值不变 → 计算结果不变） */
+for(const s of ['hv','mv','lv']){
+  document.querySelectorAll(`input[name=${UNIT_NAME[s]}]`).forEach(el => el.addEventListener('change', (ev) => {
+    if(!ev.target.checked) return;
+    const newUnit = ev.target.value;
+    if(newUnit !== data[s].unit){
+      const f = newUnit === 'mA' ? 1000 : 1 / 1000;
+      const ids = SIDE_IDS[s];
+      for(let i = 0; i < 3; i++){
+        const el = $(ids.I[i]);
+        const v = parseFloat(el.value);
+        if(!isNaN(v)) el.value = +(v * f).toFixed(4);
+      }
+      data[s].unit = newUnit;
+    }
+    syncView(readInputs());
+    markDirty();
+  }));
+}
+/* 「计算」按钮：触发计算 */
+$('calcBtn').addEventListener('click', update);
+
+function applyPreset(p){
+  data = JSON.parse(JSON.stringify(p));
+  for(const s of ['hv','mv','lv']){
+    data[s].unit = data[s].unit || 'A';
+    data[s].ph = data[s].ph.map(q => ({ mag: +q.mag, deg: +q.deg }));
+  }
+  data.conv = data.conv || 'lead';
+  data.transformMethod = data.transformMethod || 'hv';
+  data.icdsd = data.icdsd || 6;   /* 缺省 6Ie（旧预设/测试数据无此字段时兜底） */
+  renderInputs();
+  update();
+}
+$('presetA').addEventListener('click', () => applyPreset(DEFAULT));
+$('presetB').addEventListener('click', () => applyPreset(PRESET_B));
+$('resetBtn').addEventListener('click', () => {
+  const units = {};
+  for(const s of ['hv','mv','lv']) units[s] = data[s].unit;
+  const p = JSON.parse(JSON.stringify(DEFAULT));
+  for(const s of ['hv','mv','lv']) p[s].unit = units[s];
+  p.conv = data.conv;
+  applyPreset(p);
+});
+/* 角度约定切换：θ′ = (360−θ) % 360，物理相量不变 */
+$('convBtn').addEventListener('click', () => {
+  for(const s of ['hv','mv','lv']){
+    data[s].ph.forEach(p => { p.deg = normDeg(360 - p.deg); });
+  }
+  data.conv = data.conv === 'lead' ? 'lag' : 'lead';
+  renderInputs();
+  markDirty();
+});
+
+/* ---------------- __APP 测试契约 ---------------- */
+window.__APP = {
+  cFromPolar, cToPolar, cAdd, cSub, cScale, cConj, cMul, normDeg,
+  ydConvert, applyPhaseShift, ratedPrimaryCurrent, ratedSecondaryCurrent,
+  computeDifferential, computePowerSide, computeAll, readInputs,
+  computeSymComponents,
+  pst1200uSetId, pcs978SetIdLow, pcs978SetIdHigh, ratioSetId,  // V2.1 判据函数
+  buildIrCurveData, inActionRegion,                             // V2.1 图 3 曲线/动作区
+  curveData: buildIrCurveData,                                  // V2.1 别名（测试契约）
+  getResult: () => lastResult,
+  getDiagramData: () => {
+    if(!lastResult) return null;
+    const sides = ['hv','mv','lv'].filter(s => lastResult.raw[s]);
+    const raw = {}, final = {};
+    sides.forEach(s => {
+      raw[s] = lastResult.raw[s].map(cToPolar);
+      final[s] = lastResult.yd[s];
+    });
+    return {
+      raw, final, diff: lastResult.diff.id,
+      curve: buildIrCurveData(lastResult.transformMethod, lastResult.iop),   // V2.1 判据曲线
+      ir: lastResult.diff.ir.map(v => v / (lastResult.rated.hv.ie || 1)),  // 制动电流标幺
+      method: lastResult.transformMethod,
+      icdsd: lastResult.icdsd || 6,   // V2.2 差动速断电流（Ie 倍数）
+      rated: lastResult.rated,        // V2.3 各侧二次额定电流（图 1 标幺基准）
+      fig1: buildFig1Vecs(lastResult),// V2.3 图 1 标幺向量（mag = I / Ie）
+    };
+  },
+  get angleConvention(){ return data.conv; },
+  get state(){ return data; },
+  applyPreset,  // 测试钩子：applyPreset(DEFAULT/PRESET_B/自定义 data)
+};
+
+/* ---------------- 启动 ---------------- */
+renderInputs();
+update();
+window.addEventListener('resize', () => { if(lastResult) drawDiagrams(lastResult); });
+</script>
+</body>
+</html>
