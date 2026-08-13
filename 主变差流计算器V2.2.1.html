@@ -1073,17 +1073,21 @@ function drawIdIrCurve(canvas, fig3){
   }
 
   /* 运行点（A/B/C，黄/绿/红按相别；实心=动作，空心=不动作）。
-   * 标签防重叠：三点重合（如平衡运行）时标签会叠在一起 —— 按屏幕距离
-   * 聚类（<24px 视为重合），重合组内各相标签错开方位（A 右上 / B 右下 /
-   * C 左下）；边缘越界时按组内序号反向展开，保持标签间距不塌缩。 */
+   * 标签防重叠：按屏幕距离聚类（<24px 视为重合）。重合组标签错开方位
+   * （A 右上 / B 右下 / C 左下）；运行点贴近顶部/底部边框时（如平衡运行
+   * Id≈0 贴底），标签改为水平单行并排，避免纵向堆叠把标签推远。 */
   const pts = points.map(p => ({ p, x: X(Math.min(p.ir, xMax)), y: Y(Math.min(p.id, yMax)) }));
   const groups = [];
   pts.forEach(pt => {
     const g = groups.find(grp => grp.some(o => Math.hypot(o.x - pt.x, o.y - pt.y) < 24));
     if(g) g.push(pt); else groups.push([pt]);
   });
-  const PHASE_OFF = { A: [7, -4], B: [14, 14], C: [-17, 10] };
+  const PHASE_OFF = { A: [7, -4], B: [14, 14], C: [-14, 8] };
   groups.forEach(grp => {
+    const cy = grp[0].y;
+    const nearEdge = grp.length > 1 && (cy > cssH - mb - 18 || cy < mt + 18);
+    const rowDir = grp[0].x + 7 + grp.length * 13 + 4 < cssW - mr - 2 ? 1 : -1;
+    const rowDy = cy > cssH - mb - 18 ? -6 : 16;
     grp.forEach((pt, gi) => {
       const c = COLORS[pt.p.phase] || '#334155';
       ctx.beginPath(); ctx.arc(pt.x, pt.y, 5, 0, Math.PI * 2);
@@ -1091,14 +1095,19 @@ function drawIdIrCurve(canvas, fig3){
       else { ctx.strokeStyle = c; ctx.lineWidth = 2; ctx.stroke(); }
       ctx.fillStyle = c; ctx.font = 'bold 10px sans-serif';
       ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
-      let dx = grp.length > 1 ? PHASE_OFF[pt.p.phase][0] : 7;
-      let dy = grp.length > 1 ? PHASE_OFF[pt.p.phase][1] : -4;
-      if(grp.length > 1){
-        /* 边缘越界：水平回折、垂直按组内序号展开（-4-13i / +4+13i），保证标签间距 */
-        if(pt.x + dx < ml + 2) dx = 8 + gi * 14;
-        if(pt.x + dx > cssW - mr - 2) dx = -dx;
-        if(pt.y + dy < mt) dy = 4 + gi * 13;
-        if(pt.y + dy > cssH - mb) dy = -4 - gi * 13;
+      let dx, dy;
+      if(nearEdge){
+        dx = rowDir > 0 ? 7 + gi * 13 : -7 - gi * 13;
+        dy = rowDy;
+      } else {
+        dx = grp.length > 1 ? PHASE_OFF[pt.p.phase][0] : 7;
+        dy = grp.length > 1 ? PHASE_OFF[pt.p.phase][1] : -4;
+        if(grp.length > 1){
+          if(pt.x + dx < ml + 2) dx = 8 + gi * 14;
+          if(pt.x + dx > cssW - mr - 2) dx = -dx;
+          if(pt.y + dy < mt) dy = 4 + gi * 13;
+          if(pt.y + dy > cssH - mb) dy = -4 - gi * 13;
+        }
       }
       ctx.fillText(pt.p.phase, pt.x + dx, pt.y + dy);
     });
