@@ -799,17 +799,6 @@ function niceCeil(v){
   return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 5 ? 5 : 10) * p;
 }
 
-/* 相量图满量程：细档位（1/1.25/1.5/2/2.5/3/4/5/6/8/10），
- * 最长向量占比约 75%~90%，避免粗档位(1/2/5)造成向量偏小。 */
-const POLAR_SCALE_STEPS = [1, 1.25, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10];
-function polarScale(v){
-  if(v <= 0) return 1;
-  const p = Math.pow(10, Math.floor(Math.log10(v)));
-  const m = v / p;
-  const s = POLAR_SCALE_STEPS.find(x => x >= m) || 10;
-  return s * p;
-}
-
 function drawPolar(canvas, vecs, unitLabel){
   const dpr = window.devicePixelRatio || 1;
   /* 显示尺寸完全由 CSS 控制（figure canvas {width:100%; aspect-ratio:460/340; max-width:620px}），
@@ -825,14 +814,17 @@ function drawPolar(canvas, vecs, unitLabel){
   const cx = cssW * 0.46, cy = cssH * 0.52, R = Math.min(cssW, cssH) * 0.38;
   let maxMag = 0;
   vecs.forEach(v => { if(v.mag > maxMag) maxMag = v.mag; });
-  const scale = polarScale(maxMag * 1.1);       // 满量程（细档位，最长向量占比 ≥75%）
+  /* 满量程: 0.25 步长向上取整, 保留 10% 余量 —— 最长向量约占半径 80%~90%。
+   * 不用 1/2/5 跳档(标幺图最长≈1 时会取整到 2, 向量仅占半径一半, 图像过小) */
+  const scale = maxMag > 0 ? Math.ceil(maxMag * 1.1 / 0.25) * 0.25 : 1;
   const k = R / scale;
 
   /* 网格：同心圆 + 十字轴 + 30° 刻度（数学约定：0° 水平向右，逆时针为正） */
   ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1;
   [0.25, 0.5, 0.75, 1].forEach(f => {
     ctx.beginPath(); ctx.arc(cx, cy, R * f, 0, Math.PI * 2); ctx.stroke();
-    const lbl = (scale * f).toFixed(scale * f < 10 ? 1 : 0);
+    const v = scale * f;
+    const lbl = v.toFixed(v < 10 ? (Number.isInteger(v) ? 1 : 2) : 0);
     ctx.fillStyle = '#94a3b8'; ctx.font = '10px sans-serif';
     ctx.fillText(lbl, cx + R * f + 3, cy + 4);
   });
@@ -990,6 +982,71 @@ function drawIdIrCurve(canvas, fig3){
     if(xMax > last.ir + 1e-9) return pts.concat([{ ir: xMax, id: idFn(xMax) }]);
     return pts;
   };
+  /* 曲线旁标签避让: 文字矩形(含 14px 视觉间距)与判据折线碰撞检测, 间距
+   * 不足或压线时沿垂直方向逐级外移(12px/档, 最多4档) 直到与折线分离,
+   * 双向取更近者 —— 标签始终贴线且保持清晰间距; 同时限制在画布内 */
+  let polysPx = [];
+  const segRectHit = (x1, y1, x2, y2, rx, ry, rw, rh) => {
+    if(Math.max(x1, x2) < rx || Math.min(x1, x2) > rx + rw) return false;
+    if(Math.max(y1, y2) < ry || Math.min(y1, y2) > ry + rh) return false;
+    if((x1 >= rx && x1 <= rx + rw && y1 >= ry && y1 <= ry + rh) ||
+       (x2 >= rx && x2 <= rx + rw && y2 >= ry && y2 <= ry + rh)) return true;
+    const cr = (a, b, c, d) => {
+      const d1 = (b[1] - a[1]) * (c[0] - a[0]) - (b[0] - a[0]) * (c[1] - a[1]);
+      const d2 = (b[1] - a[1]) * (d[0] - a[0]) - (b[0] - a[0]) * (d[1] - a[1]);
+      const d3 = (d[1] - c[1]) * (a[0] - c[0]) - (d[0] - c[0]) * (a[1] - c[1]);
+      const d4 = (d[1] - c[1]) * (b[0] - c[0]) - (d[0] - c[0]) * (b[1] - c[1]);
+      return ((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) && ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0));
+    };
+    return cr([x1, y1], [x2, y2], [rx, ry], [rx + rw, ry]) ||
+           cr([x1, y1], [x2, y2], [rx + rw, ry], [rx + rw, ry + rh]) ||
+           cr([x1, y1], [x2, y2], [rx + rw, ry + rh], [rx, ry + rh]) ||
+           cr([x1, y1], [x2, y2], [rx, ry + rh], [rx, ry]);
+  };
+  const placeLabel = (s, x, y, pref) => {
+    const w = ctx.measureText(s).width, h = 12;
+    const GAP = 10;   /* 标签与折线最小视觉间距(px) */
+    /* 线段到矩形最小距离(不相交时): 端点-边投影 + 角-线段投影, 凸集完备 */
+    const segToRect = (x1, y1, x2, y2, rx, ry, rw, rh) => {
+      if(segRectHit(x1, y1, x2, y2, rx, ry, rw, rh)) return 0;
+      const p2s = (px, py, ax, ay, bx, by) => {
+        const dx = bx - ax, dy = by - ay;
+        const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy)));
+        return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+      };
+      return Math.min(
+        p2s(x1, y1, rx, ry, rx + rw, ry), p2s(x1, y1, rx + rw, ry, rx + rw, ry + rh),
+        p2s(x1, y1, rx + rw, ry + rh, rx, ry + rh), p2s(x1, y1, rx, ry + rh, rx, ry),
+        p2s(x2, y2, rx, ry, rx + rw, ry), p2s(x2, y2, rx + rw, ry, rx + rw, ry + rh),
+        p2s(x2, y2, rx + rw, ry + rh, rx, ry + rh), p2s(x2, y2, rx, ry + rh, rx, ry),
+        p2s(rx, ry, x1, y1, x2, y2), p2s(rx + rw, ry, x1, y1, x2, y2),
+        p2s(rx, ry + rh, x1, y1, x2, y2), p2s(rx + rw, ry + rh, x1, y1, x2, y2)
+      );
+    };
+    const gap = dy => {   /* 该档位间距; 出画布返回 -1 */
+      const rx = x - GAP, ry = y + dy - h - GAP, rw = w + GAP * 2, rh = h + GAP * 2;
+      if(ry < mt || ry + rh > cssH - mb) return -1;
+      let d = Infinity;
+      for(const poly of polysPx){
+        for(let i = 0; i + 1 < poly.length; i++){
+          const dd = segToRect(poly[i][0], poly[i][1], poly[i + 1][0], poly[i + 1][1], rx, ry, rw, rh);
+          if(dd < d) d = dd;
+          if(d === 0) return 0;
+        }
+      }
+      return d;
+    };
+    const dirs = pref === 'up' ? [-1, 1] : pref === 'down' ? [1, -1] : [-1, 1];
+    let bestDy = 0, bestD = -1;
+    for(const dir of dirs){
+      for(let n = 0; n <= 6; n++){
+        const dy = dir * n * 12, d = gap(dy);
+        if(d >= GAP){ ctx.fillText(s, x, y + dy); return; }   /* 达到间距即放置 */
+        if(d >= 0 && d > bestD){ bestD = d; bestDy = dy; }    /* 记最远安全档 */
+      }
+    }
+    ctx.fillText(s, x, y + bestDy);   /* 兜底: 所有档位中最远离曲线者 */
+  };
   const strokeCurve = (pts, color, dash) => {
     /* 量程裁剪: 折线仅绘制于网格内 ——
      * 1) 右侧裁剪: 判据数据定义域(8Ie)超过 xMax 的线段截断于右框(xMax),
@@ -1036,22 +1093,29 @@ function drawIdIrCurve(canvas, fig3){
     ctx.setLineDash([]);
   };
   if(Array.isArray(curve)){
-    strokeCurve(extendTo(curve, x => ratioSetId(x, fig3.iop || 0, 'hv')), '#334155', []);
+    const line = extendTo(curve, x => ratioSetId(x, fig3.iop || 0, 'hv'));
+    strokeCurve(line, '#334155', []);
+    polysPx = [line.map(p => [X(p.ir), Y(p.id)])];
     ctx.fillStyle = '#334155'; ctx.font = 'italic 10px sans-serif';
     ctx.textAlign = 'left';
-    if(inView(1.6, 0.5)) ctx.fillText('K1=0.5', X(1.6), Y(0.5));
-    if(inView(4.2, 2.6)) ctx.fillText('K2=0.7', X(4.2), Y(2.6));
+    if(inView(1.6, 0.5)) placeLabel('K1=0.5', X(1.6), Y(0.5), 'down');
+    if(inView(4.2, 2.6)) placeLabel('K2=0.7', X(4.2), Y(2.6), 'up');
   } else {
-    strokeCurve(extendTo(curve.low, x => pcs978SetIdLow(x, fig3.iop || 0)), '#334155', []);
-    strokeCurve(extendTo(curve.high, x => pcs978SetIdHigh(x)), '#64748b', [6, 4]);
+    const lowLine = extendTo(curve.low, x => pcs978SetIdLow(x, fig3.iop || 0));
+    const highLine = extendTo(curve.high, x => pcs978SetIdHigh(x));
+    strokeCurve(lowLine, '#334155', []);
+    strokeCurve(highLine, '#64748b', [6, 4]);
+    polysPx = [lowLine.map(p => [X(p.ir), Y(p.id)]), highLine.map(p => [X(p.ir), Y(p.id)])];
     ctx.fillStyle = '#334155'; ctx.font = 'italic 10px sans-serif'; ctx.textAlign = 'left';
-    if(inView(0.12, 0.45)) ctx.fillText('K=0.2', X(0.12), Y(0.45));
-    if(inView(2.6, 1.15)) ctx.fillText('K=0.5', X(2.6), Y(1.15));
-    if(inView(6.4, 3.4)) ctx.fillText('K=0.75', X(6.4), Y(3.4));
+    /* 低值折线标签统一置于低值实线的右下方 */
+    if(inView(2.2, 0.4)) placeLabel('K=0.2', X(Math.max(2.2, xMax * 0.05)), Y(0.4), 'down');
+    if(inView(2.6, 1.15)) placeLabel('K=0.5', X(2.6), Y(1.15), 'down');
+    if(inView(6.4, 3.4)) placeLabel('K=0.75', X(6.4), Y(3.4), 'down');
+    if(inView(1.5, 1.0)) placeLabel('低值', X(1.5), Y(1.0), 'down');
     ctx.fillStyle = '#64748b';
-    if(inView(1.6, 1.75)) ctx.fillText('K=0.6（高值）', X(1.6), Y(1.75));
-    if(inView(0.55, 0.9)) ctx.fillText('低值', X(0.55), Y(0.9));
-    if(inView(7.0, 5.0)) ctx.fillText('高值', X(7.0), Y(5.0));
+    /* 高值折线标签统一置于高值虚线的左上方 */
+    if(inView(1.9, 2.1)) placeLabel('K=0.6（高值）', X(1.9), Y(2.1), 'up');
+    if(inView(1.3, 2.5)) placeLabel('高值', X(1.3), Y(2.5), 'up');
   }
 
   /* 拐点标注（仅显示在量程内的拐点） */
