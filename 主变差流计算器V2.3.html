@@ -814,14 +814,17 @@ function drawPolar(canvas, vecs, unitLabel){
   const cx = cssW * 0.46, cy = cssH * 0.52, R = Math.min(cssW, cssH) * 0.38;
   let maxMag = 0;
   vecs.forEach(v => { if(v.mag > maxMag) maxMag = v.mag; });
-  const scale = niceCeil(maxMag * 1.1);       // 满量程（向上取整到 1/2/5×10ⁿ）
+  /* 满量程: 0.25 步长向上取整, 保留 10% 余量 —— 最长向量约占半径 80%~90%。
+   * 不用 1/2/5 跳档(标幺图最长≈1 时会取整到 2, 向量仅占半径一半, 图像过小) */
+  const scale = maxMag > 0 ? Math.ceil(maxMag * 1.1 / 0.25) * 0.25 : 1;
   const k = R / scale;
 
   /* 网格：同心圆 + 十字轴 + 30° 刻度（数学约定：0° 水平向右，逆时针为正） */
   ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1;
   [0.25, 0.5, 0.75, 1].forEach(f => {
     ctx.beginPath(); ctx.arc(cx, cy, R * f, 0, Math.PI * 2); ctx.stroke();
-    const lbl = (scale * f).toFixed(scale * f < 10 ? 1 : 0);
+    const v = scale * f;
+    const lbl = v.toFixed(v < 10 ? (Number.isInteger(v) ? 1 : 2) : 0);
     ctx.fillStyle = '#94a3b8'; ctx.font = '10px sans-serif';
     ctx.fillText(lbl, cx + R * f + 3, cy + 4);
   });
