@@ -982,6 +982,19 @@ function drawIdIrCurve(canvas, fig3){
     if(xMax > last.ir + 1e-9) return pts.concat([{ ir: xMax, id: idFn(xMax) }]);
     return pts;
   };
+  /* 带背景文字: 曲线标签可能压在判据折线上, 半透明白底保证可读美观 */
+  const labelBg = (s, x, y) => {
+    const col = ctx.fillStyle, w = ctx.measureText(s).width, h = 12;
+    const al = ctx.textAlign || 'left', bl = ctx.textBaseline || 'alphabetic';
+    let bx = x, by = y;
+    if(al === 'center') bx = x - w / 2; else if(al === 'right') bx = x - w;
+    if(bl === 'bottom') by = y - h; else if(bl === 'middle') by = y - h / 2;
+    else if(bl === 'top') by = y; else by = y - h * 0.75;
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    ctx.fillRect(bx - 2, by - 1, w + 4, h + 2);
+    ctx.fillStyle = col;
+    ctx.fillText(s, x, y);
+  };
   const strokeCurve = (pts, color, dash) => {
     /* 量程裁剪: 折线仅绘制于网格内 ——
      * 1) 右侧裁剪: 判据数据定义域(8Ie)超过 xMax 的线段截断于右框(xMax),
@@ -1031,37 +1044,37 @@ function drawIdIrCurve(canvas, fig3){
     strokeCurve(extendTo(curve, x => ratioSetId(x, fig3.iop || 0, 'hv')), '#334155', []);
     ctx.fillStyle = '#334155'; ctx.font = 'italic 10px sans-serif';
     ctx.textAlign = 'left';
-    if(inView(1.6, 0.5)) ctx.fillText('K1=0.5', X(1.6), Y(0.5));
-    if(inView(4.2, 2.6)) ctx.fillText('K2=0.7', X(4.2), Y(2.6));
+    if(inView(1.6, 0.5)) labelBg('K1=0.5', X(1.6), Y(0.5));
+    if(inView(4.2, 2.6)) labelBg('K2=0.7', X(4.2), Y(2.6));
   } else {
     strokeCurve(extendTo(curve.low, x => pcs978SetIdLow(x, fig3.iop || 0)), '#334155', []);
     strokeCurve(extendTo(curve.high, x => pcs978SetIdHigh(x)), '#64748b', [6, 4]);
     ctx.fillStyle = '#334155'; ctx.font = 'italic 10px sans-serif'; ctx.textAlign = 'left';
-    if(inView(0.12, 0.45)) ctx.fillText('K=0.2', X(0.12), Y(0.45));
-    if(inView(2.6, 1.15)) ctx.fillText('K=0.5', X(2.6), Y(1.15));
-    if(inView(6.4, 3.4)) ctx.fillText('K=0.75', X(6.4), Y(3.4));
+    if(inView(0.12, 0.45)) labelBg('K=0.2', X(Math.max(0.12, xMax * 0.03)), Y(0.45));
+    if(inView(2.6, 1.15)) labelBg('K=0.5', X(2.6), Y(1.15));
+    if(inView(6.4, 3.4)) labelBg('K=0.75', X(6.4), Y(3.4));
     ctx.fillStyle = '#64748b';
-    if(inView(1.6, 1.75)) ctx.fillText('K=0.6（高值）', X(1.6), Y(1.75));
-    if(inView(0.55, 0.9)) ctx.fillText('低值', X(0.55), Y(0.9));
-    if(inView(7.0, 5.0)) ctx.fillText('高值', X(7.0), Y(5.0));
+    if(inView(1.6, 1.75)) labelBg('K=0.6（高值）', X(1.6), Y(1.75));
+    if(inView(0.55, 0.9)) labelBg('低值', X(0.55), Y(0.9));
+    if(inView(7.0, 5.0)) labelBg('高值', X(7.0), Y(5.0));
   }
 
   /* 拐点标注（仅显示在量程内的拐点） */
   if(Array.isArray(curve)){
     ctx.fillStyle = '#94a3b8'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
-    if(xMax >= 0.8) ctx.fillText('0.8Ie', X(0.8), Y(0) + 20);
-    if(xMax >= 3.0) ctx.fillText('3Ie', X(3.0), Y(0) + 20);
+    if(xMax >= 0.8) labelBg('0.8Ie', X(0.8), Y(0) + 20);
+    if(xMax >= 3.0) labelBg('3Ie', X(3.0), Y(0) + 20);
   } else {
     ctx.fillStyle = '#94a3b8'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
-    if(xMax >= 0.5) ctx.fillText('0.5Ie', X(0.5), Y(0) + 20);
-    if(xMax >= 0.8) ctx.fillText('0.8Ie', X(0.8), Y(0) + 20);
-    if(xMax >= 6.0) ctx.fillText('6Ie', X(6.0), Y(0) + 20);
+    if(xMax >= 0.5) labelBg('0.5Ie', X(0.5), Y(0) + 20);
+    if(xMax >= 0.8) labelBg('0.8Ie', X(0.8), Y(0) + 20);
+    if(xMax >= 6.0) labelBg('6Ie', X(6.0), Y(0) + 20);
   }
 
   /* 动作区文字 */
   ctx.fillStyle = 'rgba(51, 65, 85, 0.55)'; ctx.font = 'bold 11px sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('差动动作区', X(xMax * 0.68), Y(yMax * 0.85));
+  labelBg('差动动作区', X(xMax * 0.68), Y(yMax * 0.85));
 
   /* 差动速断线（V2.2）：Id = Icdsd 水平折线（红色虚线），位于判据曲线上方。
    * 仅当速断整定值在量程内（icdsd ≤ yMax）时绘制 —— 量程外表示运行点 Id
@@ -1072,7 +1085,7 @@ function drawIdIrCurve(canvas, fig3){
     ctx.setLineDash([]);
     ctx.fillStyle = '#dc2626'; ctx.font = 'bold 10px sans-serif';
     ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';   /* 名称置于线上方左端，不与折线重叠 */
-    ctx.fillText('Icdsd=' + fig3.icdsd + 'Ie', X(0) + 4, Y(fig3.icdsd) - 5);
+    labelBg('Icdsd=' + fig3.icdsd + 'Ie', X(0) + 4, Y(fig3.icdsd) - 5);
   }
 
   /* 运行点（A/B/C，黄/绿/红按相别；实心=动作，空心=不动作）。
@@ -1112,7 +1125,7 @@ function drawIdIrCurve(canvas, fig3){
           if(pt.y + dy > cssH - mb) dy = -4 - gi * 13;
         }
       }
-      ctx.fillText(pt.p.phase, pt.x + dx, pt.y + dy);
+      labelBg(pt.p.phase, pt.x + dx, pt.y + dy);
     });
   });
 }
